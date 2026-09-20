@@ -10,8 +10,10 @@ from app_automatas.model.factory import create_automaton
 
 AutomatonType = Literal["AFD", "AFN"]
 ThemeMode = Literal["light", "dark"]
+EditorTool = Literal["select", "state"]
 SUPPORTED_AUTOMATON_TYPES: tuple[AutomatonType, ...] = ("AFD", "AFN")
 SUPPORTED_THEMES: tuple[ThemeMode, ...] = ("light", "dark")
+SUPPORTED_EDITOR_TOOLS: tuple[EditorTool, ...] = ("select", "state")
 
 
 @dataclass(slots=True)
@@ -20,6 +22,7 @@ class EditorSession:
 
     automaton_type: AutomatonType = "AFD"
     theme_mode: ThemeMode = "light"
+    editor_tool: EditorTool = "select"
     automaton: Automaton = field(init=False)
 
     def __post_init__(self) -> None:
@@ -44,3 +47,9 @@ class EditorSession:
         if theme_mode not in SUPPORTED_THEMES:
             raise ValueError(f"Unsupported theme: {theme_mode}")
         self.theme_mode = cast(ThemeMode, theme_mode)
+
+    def set_editor_tool(self, editor_tool: str) -> None:
+        """Select the active canvas interaction tool."""
+        if editor_tool not in SUPPORTED_EDITOR_TOOLS:
+            raise ValueError(f"Unsupported editor tool: {editor_tool}")
+        self.editor_tool = cast(EditorTool, editor_tool)

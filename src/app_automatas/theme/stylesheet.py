@@ -30,6 +30,12 @@ QLabel#secondaryText {{
     color: {colors.text_secondary};
 }}
 
+QLabel#selectedStateName {{
+    color: {colors.accent};
+    font-size: 16px;
+    font-weight: 700;
+}}
+
 QGroupBox {{
     background-color: transparent;
     border: 1px solid {colors.border};
