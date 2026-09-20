@@ -25,6 +25,9 @@ class EditorToolBar(QToolBar):
     theme_changed = Signal(str)
     clear_requested = Signal()
     validation_requested = Signal()
+    conversion_requested = Signal()
+    open_requested = Signal()
+    save_requested = Signal()
 
     def __init__(self) -> None:
         super().__init__("Herramientas")
@@ -38,6 +41,27 @@ class EditorToolBar(QToolBar):
         self._tool_group.setExclusive(True)
 
         colors = get_palette(self._theme_mode)
+        self.open_action = QAction(_create_open_icon(colors), "Abrir", self)
+        self.open_action.setShortcut("Ctrl+O")
+        self._configure_action_help(
+            self.open_action,
+            "Abrir — carga un autómata guardado en formato JSON (Ctrl+O).",
+        )
+        self.open_action.triggered.connect(self.open_requested.emit)
+        self.addAction(self.open_action)
+        self._enable_immediate_tooltip(self.open_action)
+
+        self.save_action = QAction(_create_save_icon(colors), "Guardar", self)
+        self.save_action.setShortcut("Ctrl+S")
+        self._configure_action_help(
+            self.save_action,
+            "Guardar — guarda el autómata actual en formato JSON (Ctrl+S).",
+        )
+        self.save_action.triggered.connect(self.save_requested.emit)
+        self.addAction(self.save_action)
+        self._enable_immediate_tooltip(self.save_action)
+        self.addSeparator()
+
         self.select_action = self._add_tool_action(
             "Seleccionar",
             "select",
@@ -59,6 +83,16 @@ class EditorToolBar(QToolBar):
         self.select_action.setChecked(True)
 
         self.addSeparator()
+        self.convert_action = QAction(_create_convert_icon(colors), "Convertir AFN a AFD", self)
+        self._configure_action_help(
+            self.convert_action,
+            "Convertir — genera un AFD equivalente mediante construcción de subconjuntos.",
+        )
+        self.convert_action.triggered.connect(self.conversion_requested.emit)
+        self.convert_action.setEnabled(False)
+        self.addAction(self.convert_action)
+        self._enable_immediate_tooltip(self.convert_action)
+
         self.validate_action = QAction(_create_validate_icon(colors), "Validar", self)
         self._configure_action_help(
             self.validate_action,
@@ -145,14 +179,21 @@ class EditorToolBar(QToolBar):
 
     def _refresh_icons(self) -> None:
         colors = get_palette(self._theme_mode)
+        self.open_action.setIcon(_create_open_icon(colors))
+        self.save_action.setIcon(_create_save_icon(colors))
         self.select_action.setIcon(_create_select_icon(colors))
         self.add_state_action.setIcon(_create_state_icon(colors))
         self.add_transition_action.setIcon(_create_transition_icon(colors))
+        self.convert_action.setIcon(_create_convert_icon(colors))
         self.validate_action.setIcon(_create_validate_icon(colors))
         self.clear_action.setIcon(_create_clear_icon(colors))
         self.theme_action.setIcon(
             _create_theme_icon(self._theme_mode == "dark", colors)
         )
+
+    def set_conversion_available(self, available: bool) -> None:
+        """Enable AFN→AFD conversion only while editing an AFN."""
+        self.convert_action.setEnabled(available)
 
     def set_editor_tool(self, editor_tool: str) -> None:
         """Reflect the active editor tool without emitting another request."""
@@ -191,6 +232,28 @@ def _finish_icon(pixmap: QPixmap, painter: QPainter) -> QIcon:
     painter.end()
     return QIcon(pixmap)
 
+
+
+def _create_open_icon(colors: ThemePalette) -> QIcon:
+    pixmap, painter = _icon_canvas()
+    painter.setPen(QPen(QColor(colors.accent), 2.3))
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    painter.drawRoundedRect(QRectF(5, 11, 26, 18), 3, 3)
+    painter.drawLine(QPointF(8, 11), QPointF(12, 7))
+    painter.drawLine(QPointF(12, 7), QPointF(19, 7))
+    painter.drawLine(QPointF(19, 7), QPointF(22, 11))
+    painter.drawLine(QPointF(9, 25), QPointF(27, 16))
+    return _finish_icon(pixmap, painter)
+
+
+def _create_save_icon(colors: ThemePalette) -> QIcon:
+    pixmap, painter = _icon_canvas()
+    painter.setPen(QPen(QColor(colors.accent), 2.3))
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    painter.drawRoundedRect(QRectF(7, 5, 22, 26), 3, 3)
+    painter.drawRect(QRectF(11, 7, 12, 7))
+    painter.drawRoundedRect(QRectF(11, 20, 14, 8), 2, 2)
+    return _finish_icon(pixmap, painter)
 
 def _create_select_icon(colors: ThemePalette) -> QIcon:
     pixmap, painter = _icon_canvas()
@@ -231,6 +294,28 @@ def _create_transition_icon(colors: ThemePalette) -> QIcon:
     arrow.moveTo(26, 17.5)
     arrow.lineTo(21.5, 21.3)
     painter.drawPath(arrow)
+    return _finish_icon(pixmap, painter)
+
+
+def _create_convert_icon(colors: ThemePalette) -> QIcon:
+    """Create a subset-construction icon for AFN to AFD conversion."""
+    pixmap, painter = _icon_canvas()
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    painter.setPen(QPen(QColor(colors.accent), 2.2))
+    painter.drawEllipse(QRectF(3.5, 8.5, 11, 11))
+    painter.drawEllipse(QRectF(7.5, 16.0, 11, 11))
+
+    painter.setPen(QPen(QColor(colors.primary), 2.4))
+    painter.drawLine(QPointF(17.5, 18), QPointF(26, 18))
+    arrow = QPainterPath()
+    arrow.moveTo(26, 18)
+    arrow.lineTo(22, 14.5)
+    arrow.moveTo(26, 18)
+    arrow.lineTo(22, 21.5)
+    painter.drawPath(arrow)
+
+    painter.setPen(QPen(QColor(colors.success), 2.6))
+    painter.drawEllipse(QRectF(25, 9, 8, 18))
     return _finish_icon(pixmap, painter)
 
 

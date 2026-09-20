@@ -1,7 +1,7 @@
 [project]
 name = "app-automatas"
 version = "0.1.0"
-description = "Add your description here"
+description = "Editor visual de AFD y AFN con simulación y conversión por subconjuntos"
 readme = "README.md"
 authors = [
     { name = "Nicolás Guevara Herrán", email = "nguevarah@udistrital.edu.co" }
@@ -26,3 +26,14 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["app_automatas"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_also = [
+    "if __name__ == .__main__.:",
+]

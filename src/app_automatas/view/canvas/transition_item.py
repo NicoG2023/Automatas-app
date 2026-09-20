@@ -46,6 +46,8 @@ class TransitionItem(QGraphicsPathItem):
         self._target_item = target_item
         self._colors = get_palette(theme_mode)
         self._curved = False
+        self._simulation_role: str | None = None
+        self._simulation_phase = False
 
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self.setZValue(1)
@@ -72,6 +74,15 @@ class TransitionItem(QGraphicsPathItem):
     def symbols(self) -> frozenset[str]:
         return frozenset(self._transition.symbols)
 
+    @property
+    def simulation_active(self) -> bool:
+        """Report whether the edge is highlighted as part of the live/success path."""
+        return self._simulation_role == "active"
+
+    @property
+    def simulation_role(self) -> str | None:
+        return self._simulation_role
+
     def shape(self) -> QPainterPath:
         """Provide a generous click target without drawing a thicker edge."""
         stroker = QPainterPathStroker()
@@ -95,6 +106,31 @@ class TransitionItem(QGraphicsPathItem):
         self._colors = get_palette(theme_mode)
         self._apply_child_colors()
         self.update()
+
+    def set_simulation_role(self, role: str | None) -> None:
+        """Apply an active, successful, failed or neutral simulation style."""
+        if role not in {None, "active", "success", "failed"}:
+            raise ValueError(f"Unsupported simulation role: {role}")
+
+        if role == "active":
+            self._simulation_phase = (
+                not self._simulation_phase
+                if self._simulation_role == "active"
+                else True
+            )
+        else:
+            self._simulation_phase = False
+
+        if self._simulation_role == role and role != "active":
+            return
+
+        self._simulation_role = role
+        self._apply_style(self.isSelected())
+        self.update()
+
+    def set_simulation_active(self, active: bool) -> None:
+        """Backward-compatible helper for the original single-highlight API."""
+        self.set_simulation_role("active" if active else None)
 
     def update_geometry(self) -> None:
         """Recalculate line, arrow and label after either state moves."""
@@ -183,8 +219,21 @@ class TransitionItem(QGraphicsPathItem):
         self._apply_style(self.isSelected())
 
     def _apply_style(self, selected: bool) -> None:
-        color = self._colors.accent if selected else self._colors.primary
-        width = 3.2 if selected else 2.4
+        if self._simulation_role == "active":
+            color = self._colors.success
+            width = 5.4 if self._simulation_phase else 4.0
+        elif self._simulation_role == "success":
+            color = self._colors.success
+            width = 4.0
+        elif self._simulation_role == "failed":
+            color = self._colors.error
+            width = 3.8
+        elif selected:
+            color = self._colors.accent
+            width = 3.2
+        else:
+            color = self._colors.primary
+            width = 2.4
         self.setPen(
             QPen(
                 QColor(color),
@@ -195,7 +244,8 @@ class TransitionItem(QGraphicsPathItem):
         )
         self._arrow_item.setPen(QPen(QColor(color), 1.0))
         self._arrow_item.setBrush(QBrush(QColor(color)))
-        self._label_item.setBrush(QBrush(QColor(self._colors.text_primary)))
+        label_color = self._colors.error if self._simulation_role == "failed" else (self._colors.success if self._simulation_role in {"active", "success"} else self._colors.text_primary)
+        self._label_item.setBrush(QBrush(QColor(label_color)))
 
     @staticmethod
     def _normalized(vector: QPointF) -> QPointF:

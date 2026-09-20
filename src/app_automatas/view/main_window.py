@@ -3,22 +3,28 @@
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QApplication,
+    QFileDialog,
     QHBoxLayout,
     QInputDialog,
     QMainWindow,
     QMessageBox,
     QScrollArea,
+    QVBoxLayout,
     QWidget,
 )
 
+from app_automatas.model.dfa import DFA
+from app_automatas.model.nfa import NFA
 from app_automatas.model.state import State
 from app_automatas.model.transition import Transition
 from app_automatas.theme.manager import apply_theme
 from app_automatas.view.canvas.automaton_scene import AutomatonScene
 from app_automatas.view.canvas.automaton_view import AutomatonView
 from app_automatas.view.canvas.transition_item import TransitionItem
+from app_automatas.view.dialogs.conversion_dialog import ConversionDialog
 from app_automatas.view.widgets.editor_sidebar import EditorSidebar
 from app_automatas.view.widgets.editor_toolbar import EditorToolBar
+from app_automatas.view.widgets.simulation_panel import SimulationPanel
 
 
 class MainWindow(QMainWindow):
@@ -30,6 +36,9 @@ class MainWindow(QMainWindow):
     theme_changed = Signal(str)
     clear_requested = Signal()
     validation_requested = Signal()
+    conversion_requested = Signal()
+    open_requested = Signal()
+    save_requested = Signal()
     canvas_clicked = Signal(float, float)
     state_selected = Signal(object)
     state_moved = Signal(str, float, float)
@@ -42,6 +51,11 @@ class MainWindow(QMainWindow):
     transition_selected = Signal(object)
     transition_symbols_changed = Signal(str, str, object)
     transition_delete_requested = Signal(str, str)
+    simulation_start_requested = Signal(str)
+    simulation_next_requested = Signal()
+    simulation_play_requested = Signal()
+    simulation_pause_requested = Signal()
+    simulation_reset_requested = Signal()
 
     def __init__(self) -> None:
         super().__init__()
@@ -50,12 +64,15 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(960, 640)
         self.resize(1280, 800)
         self._theme_mode = "light"
+        self._conversion_dialogs: list[ConversionDialog] = []
 
         self.scene = AutomatonScene()
         self.canvas = AutomatonView(self.scene)
+        self.canvas.enable_zoom_mode(auto_fit=False)
         self.sidebar = EditorSidebar()
         self.sidebar_scroll_area = self._build_sidebar_scroll_area()
         self.toolbar = EditorToolBar()
+        self.simulation_panel = SimulationPanel()
 
         self.sidebar.automaton_type_changed.connect(self.automaton_type_changed.emit)
         self.sidebar.alphabet_changed.connect(self.alphabet_changed.emit)
@@ -73,6 +90,14 @@ class MainWindow(QMainWindow):
         self.toolbar.theme_changed.connect(self.theme_changed.emit)
         self.toolbar.clear_requested.connect(self.clear_requested.emit)
         self.toolbar.validation_requested.connect(self.validation_requested.emit)
+        self.toolbar.conversion_requested.connect(self.conversion_requested.emit)
+        self.toolbar.open_requested.connect(self.open_requested.emit)
+        self.toolbar.save_requested.connect(self.save_requested.emit)
+        self.simulation_panel.start_requested.connect(self.simulation_start_requested.emit)
+        self.simulation_panel.next_requested.connect(self.simulation_next_requested.emit)
+        self.simulation_panel.play_requested.connect(self.simulation_play_requested.emit)
+        self.simulation_panel.pause_requested.connect(self.simulation_pause_requested.emit)
+        self.simulation_panel.reset_requested.connect(self.simulation_reset_requested.emit)
         self.scene.canvas_clicked.connect(self.canvas_clicked.emit)
         self.scene.selected_state_changed.connect(self.state_selected.emit)
         self.scene.selected_transition_changed.connect(self.transition_selected.emit)
@@ -101,7 +126,15 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(16)
         layout.addWidget(self.sidebar_scroll_area)
-        layout.addWidget(self.canvas, 1)
+
+        editor_area = QWidget()
+        editor_area.setObjectName("editorArea")
+        editor_layout = QVBoxLayout(editor_area)
+        editor_layout.setContentsMargins(0, 0, 0, 0)
+        editor_layout.setSpacing(12)
+        editor_layout.addWidget(self.canvas, 1)
+        editor_layout.addWidget(self.simulation_panel)
+        layout.addWidget(editor_area, 1)
         return central_widget
 
     def set_automaton_type(self, automaton_type: str) -> None:
@@ -115,6 +148,111 @@ class MainWindow(QMainWindow):
         self.canvas.set_editor_tool(editor_tool)
         self.scene.set_editor_tool(editor_tool)
 
+    def set_simulation_automaton_type(self, automaton_type: str) -> None:
+        self.simulation_panel.set_automaton_type(automaton_type)
+
+    def set_conversion_available(self, available: bool) -> None:
+        self.toolbar.set_conversion_available(available)
+
+    @property
+    def conversion_dialogs(self) -> tuple[ConversionDialog, ...]:
+        return tuple(self._conversion_dialogs)
+
+    def show_converted_automaton(
+        self,
+        automaton: DFA,
+        source_nfa: NFA | None = None,
+    ) -> ConversionDialog:
+        """Open the generated DFA in an independent movable canvas."""
+        dialog = ConversionDialog(
+            automaton,
+            self._theme_mode,
+            self,
+            source_nfa=source_nfa,
+        )
+        self._conversion_dialogs.append(dialog)
+        dialog.finished.connect(
+            lambda _result, current=dialog: self._remove_conversion_dialog(current)
+        )
+        dialog.show()
+        return dialog
+
+    def _remove_conversion_dialog(self, dialog: ConversionDialog) -> None:
+        if dialog in self._conversion_dialogs:
+            self._conversion_dialogs.remove(dialog)
+
+    def set_simulation_available(self, available: bool) -> None:
+        self.simulation_panel.set_available(available)
+
+    def show_simulation_snapshot(self, snapshot: object, *, playing: bool = False) -> None:
+        from app_automatas.services.simulation import (
+            DFASimulationSnapshot,
+            NFASimulationSnapshot,
+        )
+
+        if not isinstance(snapshot, (DFASimulationSnapshot, NFASimulationSnapshot)):
+            raise TypeError("Expected a DFA or NFA simulation snapshot")
+        self.simulation_panel.show_snapshot(snapshot, playing=playing)
+        if isinstance(snapshot, DFASimulationSnapshot):
+            if snapshot.is_finished:
+                final_transition = (
+                    () if snapshot.last_transition is None else (snapshot.last_transition,)
+                )
+                self.scene.set_simulation_visuals(
+                    active_state_ids=(snapshot.current_state_id,),
+                    active_transition_keys=final_transition,
+                    success_state_ids=snapshot.path_state_ids,
+                    success_transition_keys=snapshot.path_transitions,
+                    failed_state_ids=snapshot.failed_state_ids,
+                    failed_transition_keys=snapshot.failed_transitions,
+                )
+            else:
+                active_transitions = (
+                    () if snapshot.last_transition is None else (snapshot.last_transition,)
+                )
+                self.scene.set_simulation_visuals(
+                    active_state_ids=(snapshot.current_state_id,),
+                    active_transition_keys=active_transitions,
+                    success_state_ids=snapshot.path_state_ids,
+                    success_transition_keys=snapshot.path_transitions,
+                    failed_state_ids=snapshot.failed_state_ids,
+                    failed_transition_keys=snapshot.failed_transitions,
+                )
+            return
+
+        if snapshot.is_finished:
+            self.scene.set_simulation_visuals(
+                active_state_ids=snapshot.active_state_ids,
+                active_transition_keys=snapshot.last_transitions,
+                success_state_ids=snapshot.path_state_ids,
+                success_transition_keys=snapshot.path_transitions,
+                failed_state_ids=snapshot.failed_state_ids,
+                failed_transition_keys=snapshot.failed_transitions,
+            )
+        else:
+            self.scene.set_simulation_visuals(
+                active_state_ids=snapshot.active_state_ids,
+                active_transition_keys=snapshot.last_transitions,
+                success_state_ids=snapshot.path_state_ids,
+                success_transition_keys=snapshot.path_transitions,
+                failed_state_ids=snapshot.failed_state_ids,
+                failed_transition_keys=snapshot.failed_transitions,
+            )
+
+    def set_simulation_playing(self, playing: bool, snapshot: object) -> None:
+        from app_automatas.services.simulation import (
+            DFASimulationSnapshot,
+            NFASimulationSnapshot,
+        )
+
+        if not isinstance(snapshot, (DFASimulationSnapshot, NFASimulationSnapshot)):
+            raise TypeError("Expected a DFA or NFA simulation snapshot")
+        self.simulation_panel.set_playing(playing, snapshot)
+
+    def reset_simulation_display(self) -> None:
+        self.simulation_panel.set_idle()
+        self.scene.clear_simulation_highlight()
+
     def set_theme(self, theme_mode: str) -> None:
         """Apply a theme globally and synchronize canvas items and toolbar."""
         application = QApplication.instance()
@@ -124,6 +262,8 @@ class MainWindow(QMainWindow):
         apply_theme(application, theme_mode)
         self.scene.set_theme(theme_mode)
         self.toolbar.set_theme(theme_mode)
+        for dialog in tuple(self._conversion_dialogs):
+            dialog.set_theme(theme_mode)
 
     def add_state(self, state: State) -> None:
         self.scene.add_state_item(state, select=True)
@@ -235,6 +375,37 @@ class MainWindow(QMainWindow):
         )
         return answer == QMessageBox.StandardButton.Yes
 
+    def request_open_automaton_path(self) -> str | None:
+        path, _selected_filter = QFileDialog.getOpenFileName(
+            self,
+            "Abrir autómata",
+            "",
+            "Autómatas JSON (*.json);;Todos los archivos (*)",
+        )
+        return path or None
+
+    def request_save_automaton_path(self) -> str | None:
+        path, _selected_filter = QFileDialog.getSaveFileName(
+            self,
+            "Guardar autómata",
+            "automata.json",
+            "Autómatas JSON (*.json)",
+        )
+        return path or None
+
+    def confirm_replace_automaton(self) -> bool:
+        answer = QMessageBox.question(
+            self,
+            "Abrir autómata",
+            "El autómata actual será reemplazado. ¿Deseas continuar?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        return answer == QMessageBox.StandardButton.Yes
+
+    def show_persistence_error(self, message: str) -> None:
+        QMessageBox.warning(self, "Archivo de autómata", message)
+
     def confirm_clear_automaton(self) -> bool:
         """Confirm clearing the complete current automaton."""
         answer = QMessageBox.question(
@@ -275,6 +446,9 @@ class MainWindow(QMainWindow):
             )
 
         dialog.exec()
+
+    def show_simulation_error(self, message: str) -> None:
+        QMessageBox.warning(self, "No se puede simular", message)
 
     def show_status(self, message: str) -> None:
         self.statusBar().showMessage(message)

@@ -164,6 +164,11 @@ QToolBar QToolButton {{
     border-radius: 10px;
 }}
 
+QWidget#toolbarSpacer {{
+    background-color: transparent;
+    border: none;
+}}
+
 QStatusBar {{
     background-color: {colors.surface};
     color: {colors.text_secondary};
@@ -172,6 +177,159 @@ QStatusBar {{
 
 QStatusBar::item {{
     border: none;
+}}
+
+
+QWidget#simulationPanel {{
+    background-color: {colors.surface};
+    border: 1px solid {colors.border};
+    border-radius: 14px;
+}}
+
+QLabel#simulationTitle, QLabel#conversionTitle, QLabel#conversionTableTitle, QLabel#conversionProcessTitle {{
+    color: {colors.primary};
+    font-size: 16px;
+    font-weight: 700;
+}}
+
+QWidget#conversionTablePanel {{
+    background-color: {colors.surface};
+    border: 1px solid {colors.border};
+    border-radius: 14px;
+}}
+
+QSplitter#conversionSplitter::handle {{
+    width: 8px;
+    background-color: transparent;
+}}
+
+QTableWidget#conversionTransitionTable {{
+    background-color: {colors.canvas};
+    alternate-background-color: {colors.surface_alt};
+    color: {colors.text_primary};
+    border: 1px solid {colors.border};
+    border-radius: 10px;
+    gridline-color: {colors.border};
+    selection-background-color: {colors.selection};
+    selection-color: {colors.text_primary};
+}}
+
+QTableWidget#conversionTransitionTable QHeaderView::section {{
+    background-color: {colors.surface_alt};
+    color: {colors.primary};
+    border: none;
+    border-right: 1px solid {colors.border};
+    border-bottom: 1px solid {colors.border};
+    padding: 8px 10px;
+    font-weight: 700;
+}}
+
+QTableWidget#conversionTransitionTable::item {{
+    padding: 7px 9px;
+}}
+
+QTableWidget#conversionProcessOriginalTable,
+QTableWidget#conversionProcessExpandedTable,
+QTableWidget#conversionProcessRenamedTable {{
+    background-color: {colors.canvas};
+    color: {colors.text_primary};
+    border: 1px solid {colors.border};
+    border-radius: 10px;
+    gridline-color: {colors.border};
+}}
+
+QTableWidget#conversionProcessOriginalTable QHeaderView::section,
+QTableWidget#conversionProcessExpandedTable QHeaderView::section,
+QTableWidget#conversionProcessRenamedTable QHeaderView::section {{
+    background-color: {colors.surface_alt};
+    color: {colors.primary};
+    border: none;
+    border-right: 1px solid {colors.border};
+    border-bottom: 1px solid {colors.border};
+    padding: 16px 24px;
+    font-weight: 700;
+    font-size: 22px;
+}}
+
+QTableWidget#conversionProcessOriginalTable::item,
+QTableWidget#conversionProcessExpandedTable::item,
+QTableWidget#conversionProcessRenamedTable::item {{
+    padding: 18px 28px;
+    font-size: 21px;
+}}
+
+QLabel#conversionMappingText {{
+    padding: 10px 12px;
+    background-color: {colors.surface_alt};
+    color: {colors.text_primary};
+    border: 1px solid {colors.border};
+    border-radius: 9px;
+}}
+
+QLabel#conversionReachabilityNote {{
+    padding: 10px 12px;
+    background-color: {colors.selection};
+    color: {colors.primary};
+    border: 1px solid {colors.border};
+    border-radius: 9px;
+    font-weight: 600;
+}}
+
+QPushButton#conversionProcessButton,
+QPushButton#conversionProcessPrimaryButton {{
+    background-color: {colors.primary};
+    border-color: {colors.primary};
+    color: #FFFFFF;
+}}
+
+QPushButton#conversionProcessButton:hover,
+QPushButton#conversionProcessPrimaryButton:hover {{
+    background-color: {colors.primary_hover};
+    border-color: {colors.primary_hover};
+}}
+
+QLabel#simulationResult {{
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    background-color: {colors.surface_alt};
+    color: {colors.text_secondary};
+}}
+
+QLabel#simulationResult[simulationStatus="ready"],
+QLabel#simulationResult[simulationStatus="running"] {{
+    color: {colors.primary};
+    background-color: {colors.selection};
+}}
+
+QLabel#simulationResult[simulationStatus="accepted"] {{
+    color: {colors.success};
+    background-color: {colors.surface_alt};
+}}
+
+QLabel#simulationResult[simulationStatus="rejected"] {{
+    color: {colors.error};
+    background-color: {colors.surface_alt};
+}}
+
+QLabel#simulationValue {{
+    min-height: 24px;
+    padding: 4px 8px;
+    border: 1px solid {colors.border};
+    border-radius: 7px;
+    background-color: {colors.canvas};
+    color: {colors.text_primary};
+}}
+
+QPushButton#simulationPrimaryButton {{
+    background-color: {colors.primary};
+    border-color: {colors.primary};
+    color: #FFFFFF;
+}}
+
+QPushButton#simulationPrimaryButton:hover {{
+    background-color: {colors.primary_hover};
+    border-color: {colors.primary_hover};
 }}
 
 QGraphicsView#automatonCanvas {{

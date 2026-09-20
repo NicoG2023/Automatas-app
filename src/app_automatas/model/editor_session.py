@@ -42,6 +42,14 @@ class EditorSession:
         self.automaton_type = validated_type
         self.automaton = create_automaton(validated_type)
 
+    def replace_automaton(self, automaton: Automaton) -> None:
+        """Replace the current document while preserving UI preferences."""
+        if automaton.automaton_type not in SUPPORTED_AUTOMATON_TYPES:
+            raise ValueError(f"Unsupported automaton type: {automaton.automaton_type}")
+        self.automaton = automaton
+        self.automaton_type = cast(AutomatonType, automaton.automaton_type)
+        self.editor_tool = "select"
+
     def set_theme_mode(self, theme_mode: str) -> None:
         """Update the selected visual theme after validating it."""
         if theme_mode not in SUPPORTED_THEMES:

@@ -162,6 +162,73 @@ class AutomatonScene(QGraphicsScene):
             item.set_theme(theme_mode)
         self.update()
 
+    def set_simulation_visuals(
+        self,
+        *,
+        active_state_ids: Iterable[str] = (),
+        active_transition_keys: Iterable[tuple[str, str]] = (),
+        success_state_ids: Iterable[str] = (),
+        success_transition_keys: Iterable[tuple[str, str]] = (),
+        failed_state_ids: Iterable[str] = (),
+        failed_transition_keys: Iterable[tuple[str, str]] = (),
+    ) -> None:
+        """Apply rich simulation visuals for active, successful and failed paths."""
+        active_states = set(active_state_ids)
+        success_states = set(success_state_ids)
+        failed_states = set(failed_state_ids)
+        active_transitions = set(active_transition_keys)
+        success_transitions = set(success_transition_keys)
+        failed_transitions = set(failed_transition_keys)
+
+        for identifier, item in self._state_items.items():
+            if identifier in active_states:
+                item.set_simulation_role("active")
+            elif identifier in success_states:
+                # A shared prefix belongs to the accepted route even if another
+                # branch later dies from the same state.
+                item.set_simulation_role("success")
+            elif identifier in failed_states:
+                item.set_simulation_role("failed")
+            else:
+                item.set_simulation_role(None)
+
+        for key, item in self._transition_items.items():
+            if key in active_transitions:
+                item.set_simulation_role("active")
+            elif key in success_transitions:
+                # Successful paths take visual precedence over dead branches
+                # when a transition is shared by both histories.
+                item.set_simulation_role("success")
+            elif key in failed_transitions:
+                item.set_simulation_role("failed")
+            else:
+                item.set_simulation_role(None)
+
+    def set_simulation_highlights(
+        self,
+        state_ids: Iterable[str],
+        transition_keys: Iterable[tuple[str, str]] = (),
+    ) -> None:
+        """Backward-compatible wrapper that only marks the current active step."""
+        self.set_simulation_visuals(
+            active_state_ids=state_ids,
+            active_transition_keys=transition_keys,
+        )
+
+    def set_simulation_highlight(
+        self,
+        state_id: str | None,
+        transition_key: tuple[str, str] | None = None,
+    ) -> None:
+        """Backward-compatible single-state highlight used by DFA tests and callers."""
+        self.set_simulation_highlights(
+            () if state_id is None else (state_id,),
+            () if transition_key is None else (transition_key,),
+        )
+
+    def clear_simulation_highlight(self) -> None:
+        self.set_simulation_highlights((), ())
+
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:  # noqa: N802
         if event.button() == Qt.MouseButton.LeftButton and self._editor_tool == "transition":
             state_item = self._state_item_at(event.scenePos())
