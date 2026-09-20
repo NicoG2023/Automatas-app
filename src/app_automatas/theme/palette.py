@@ -30,11 +30,11 @@ class ThemePalette:
 
 
 LIGHT_PALETTE = ThemePalette(
-    background="#F7F4FA",
-    surface="#FFFFFF",
-    surface_alt="#F0EAF5",
+    background="#F6F1FA",
+    surface="#F1EAF8",
+    surface_alt="#E9DDF5",
     canvas="#FCFAFD",
-    border="#D9CEE3",
+    border="#D1C1E0",
     text_primary="#241A2B",
     text_secondary="#6E6476",
     primary="#6F3FA0",

@@ -6,8 +6,8 @@ from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
     QGroupBox,
-    QHBoxLayout,
     QLabel,
+    QLayout,
     QLineEdit,
     QPushButton,
     QVBoxLayout,
@@ -33,8 +33,8 @@ class EditorSidebar(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.setObjectName("editorSidebar")
-        self.setMinimumWidth(240)
-        self.setMaximumWidth(320)
+        self.setMinimumWidth(280)
+        self.setMaximumWidth(360)
         self._selected_state_id: str | None = None
         self._selected_transition: tuple[str, str] | None = None
 
@@ -46,10 +46,19 @@ class EditorSidebar(QWidget):
 
         automaton_group = QGroupBox("Autómata")
         automaton_form = QFormLayout(automaton_group)
+        automaton_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        automaton_form.setLabelAlignment(
+            automaton_form.labelAlignment()
+        )
+        automaton_form.setContentsMargins(16, 22, 16, 16)
+        automaton_form.setHorizontalSpacing(12)
+        automaton_form.setVerticalSpacing(12)
         automaton_form.addRow("Tipo:", self.automaton_type_combo)
 
         alphabet_group = QGroupBox("Alfabeto")
         alphabet_layout = QVBoxLayout(alphabet_group)
+        alphabet_layout.setContentsMargins(16, 22, 16, 16)
+        alphabet_layout.setSpacing(10)
         self.alphabet_input = QLineEdit()
         self.alphabet_input.setPlaceholderText("Ej.: a, b, 0, 1")
         self.alphabet_input.setToolTip("Separa los símbolos con comas")
@@ -59,24 +68,18 @@ class EditorSidebar(QWidget):
         alphabet_layout.addWidget(self.alphabet_input)
         alphabet_layout.addWidget(self.apply_alphabet_button)
 
-        alphabet_help = QLabel("Los AFN de esta app no utilizan transiciones ε.")
-        alphabet_help.setObjectName("secondaryText")
-        alphabet_help.setWordWrap(True)
-        alphabet_layout.addWidget(alphabet_help)
-
         state_group = QGroupBox("Estado seleccionado")
         state_layout = QVBoxLayout(state_group)
+        state_layout.setContentsMargins(16, 22, 16, 16)
+        state_layout.setSpacing(10)
         self.selected_state_label = QLabel("Ninguno")
         self.selected_state_label.setObjectName("selectedStateName")
 
-        state_name_row = QHBoxLayout()
         self.state_name_input = QLineEdit()
         self.state_name_input.setPlaceholderText("Nombre del estado")
         self.rename_state_button = QPushButton("Renombrar")
         self.rename_state_button.clicked.connect(self._emit_state_rename)
         self.state_name_input.returnPressed.connect(self._emit_state_rename)
-        state_name_row.addWidget(self.state_name_input, 1)
-        state_name_row.addWidget(self.rename_state_button)
 
         self.initial_checkbox = QCheckBox("Estado inicial")
         self.accepting_checkbox = QCheckBox("Estado de aceptación")
@@ -86,13 +89,16 @@ class EditorSidebar(QWidget):
         self.delete_state_button.clicked.connect(self._emit_state_delete)
 
         state_layout.addWidget(self.selected_state_label)
-        state_layout.addLayout(state_name_row)
+        state_layout.addWidget(self.state_name_input)
+        state_layout.addWidget(self.rename_state_button)
         state_layout.addWidget(self.initial_checkbox)
         state_layout.addWidget(self.accepting_checkbox)
         state_layout.addWidget(self.delete_state_button)
 
         transition_group = QGroupBox("Transición seleccionada")
         transition_layout = QVBoxLayout(transition_group)
+        transition_layout.setContentsMargins(16, 22, 16, 16)
+        transition_layout.setSpacing(10)
         self.selected_transition_label = QLabel("Ninguna")
         self.selected_transition_label.setObjectName("selectedTransitionName")
         self.transition_symbols_input = QLineEdit()
@@ -118,8 +124,9 @@ class EditorSidebar(QWidget):
         help_label.setWordWrap(True)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(14)
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
+        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(18)
         layout.addWidget(automaton_group)
         layout.addWidget(alphabet_group)
         layout.addWidget(state_group)

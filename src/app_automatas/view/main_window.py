@@ -1,12 +1,13 @@
 """Main desktop window."""
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
     QInputDialog,
     QMainWindow,
     QMessageBox,
+    QScrollArea,
     QWidget,
 )
 
@@ -28,6 +29,7 @@ class MainWindow(QMainWindow):
     editor_tool_changed = Signal(str)
     theme_changed = Signal(str)
     clear_requested = Signal()
+    validation_requested = Signal()
     canvas_clicked = Signal(float, float)
     state_selected = Signal(object)
     state_moved = Signal(str, float, float)
@@ -52,6 +54,7 @@ class MainWindow(QMainWindow):
         self.scene = AutomatonScene()
         self.canvas = AutomatonView(self.scene)
         self.sidebar = EditorSidebar()
+        self.sidebar_scroll_area = self._build_sidebar_scroll_area()
         self.toolbar = EditorToolBar()
 
         self.sidebar.automaton_type_changed.connect(self.automaton_type_changed.emit)
@@ -69,6 +72,7 @@ class MainWindow(QMainWindow):
         self.toolbar.tool_changed.connect(self.editor_tool_changed.emit)
         self.toolbar.theme_changed.connect(self.theme_changed.emit)
         self.toolbar.clear_requested.connect(self.clear_requested.emit)
+        self.toolbar.validation_requested.connect(self.validation_requested.emit)
         self.scene.canvas_clicked.connect(self.canvas_clicked.emit)
         self.scene.selected_state_changed.connect(self.state_selected.emit)
         self.scene.selected_transition_changed.connect(self.transition_selected.emit)
@@ -81,13 +85,22 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Listo")
         self.set_theme("light")
 
+
+    def _build_sidebar_scroll_area(self) -> QScrollArea:
+        scroll_area = QScrollArea()
+        scroll_area.setObjectName("sidebarScrollArea")
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll_area.setWidget(self.sidebar)
+        return scroll_area
+
     def _build_central_widget(self) -> QWidget:
         central_widget = QWidget()
         central_widget.setObjectName("centralArea")
         layout = QHBoxLayout(central_widget)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(16)
-        layout.addWidget(self.sidebar)
+        layout.addWidget(self.sidebar_scroll_area)
         layout.addWidget(self.canvas, 1)
         return central_widget
 
@@ -232,6 +245,36 @@ class MainWindow(QMainWindow):
             QMessageBox.StandardButton.Cancel,
         )
         return answer == QMessageBox.StandardButton.Yes
+
+
+    def show_validation_result(
+        self,
+        automaton_type: str,
+        is_valid: bool,
+        messages: tuple[str, ...],
+    ) -> None:
+        """Present structural validation without exposing technical exceptions."""
+        dialog = QMessageBox(self)
+        dialog.setObjectName("validationDialog")
+        dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
+
+        if is_valid:
+            dialog.setWindowTitle("Autómata válido")
+            dialog.setText(f"El {automaton_type} está listo para simular.")
+            dialog.setInformativeText(
+                "Las transiciones faltantes de un AFD se resolverán como rechazo "
+                "cuando corresponda durante la simulación."
+                if automaton_type == "AFD"
+                else "La estructura actual cumple las reglas necesarias para simular."
+            )
+        else:
+            dialog.setWindowTitle("Revisar autómata")
+            dialog.setText("El autómata todavía no está listo para simular.")
+            dialog.setInformativeText(
+                "\n".join(f"• {message}" for message in messages)
+            )
+
+        dialog.exec()
 
     def show_status(self, message: str) -> None:
         self.statusBar().showMessage(message)

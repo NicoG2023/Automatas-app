@@ -54,3 +54,65 @@ def test_controller_applies_dark_theme(qapp: QApplication) -> None:
 
     controller.deleteLater()
     view.close()
+
+
+def test_validation_action_reports_blocking_issues(qapp: QApplication) -> None:
+    model = EditorSession()
+    view = MainWindow()
+    controller = AppController(model=model, view=view)
+    captured: dict[str, object] = {}
+
+    def capture_result(
+        automaton_type: str,
+        is_valid: bool,
+        messages: tuple[str, ...],
+    ) -> None:
+        captured["automaton_type"] = automaton_type
+        captured["is_valid"] = is_valid
+        captured["messages"] = messages
+
+    view.show_validation_result = capture_result  # type: ignore[method-assign]
+    view.toolbar.validate_action.trigger()
+    qapp.processEvents()
+
+    assert captured["automaton_type"] == "AFD"
+    assert captured["is_valid"] is False
+    assert "Selecciona un estado inicial." in captured["messages"]
+    assert "problemas por corregir" in view.statusBar().currentMessage()
+
+    controller.deleteLater()
+    view.close()
+
+
+def test_validation_action_accepts_incomplete_dfa(qapp: QApplication) -> None:
+    model = EditorSession()
+    model.automaton.set_alphabet(["a", "b"])
+    model.automaton.add_state("q0", is_initial=True)
+    model.automaton.add_state("q1", is_accepting=True)
+    model.automaton.add_transition("q0", "q1", "a")
+    view = MainWindow()
+    controller = AppController(model=model, view=view)
+    captured: dict[str, object] = {}
+
+    def capture_result(
+        automaton_type: str,
+        is_valid: bool,
+        messages: tuple[str, ...],
+    ) -> None:
+        captured["automaton_type"] = automaton_type
+        captured["is_valid"] = is_valid
+        captured["messages"] = messages
+
+    view.show_validation_result = capture_result  # type: ignore[method-assign]
+    view.toolbar.validate_action.trigger()
+    qapp.processEvents()
+
+    assert captured == {
+        "automaton_type": "AFD",
+        "is_valid": True,
+        "messages": (),
+    }
+    assert view.statusBar().currentMessage() == "Autómata válido: listo para simular"
+
+    controller.deleteLater()
+    view.close()

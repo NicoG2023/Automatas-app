@@ -15,9 +15,25 @@ QMainWindow, QWidget {{
     font-size: 14px;
 }}
 
-QWidget#editorSidebar {{
+QWidget#centralArea {{
+    background-color: {colors.background};
+}}
+
+QScrollArea#sidebarScrollArea {{
     background-color: {colors.surface};
     border: 1px solid {colors.border};
+    border-radius: 16px;
+}}
+
+QScrollArea#sidebarScrollArea > QWidget > QWidget,
+QScrollArea#sidebarScrollArea QWidget#qt_scrollarea_viewport {{
+    background-color: {colors.surface};
+    border-radius: 16px;
+}}
+
+QWidget#editorSidebar {{
+    background-color: {colors.surface};
+    border: none;
     border-radius: 14px;
 }}
 
@@ -39,9 +55,9 @@ QLabel#selectedStateName, QLabel#selectedTransitionName {{
 QGroupBox {{
     background-color: transparent;
     border: 1px solid {colors.border};
-    border-radius: 10px;
-    margin-top: 14px;
-    padding: 16px 10px 10px 10px;
+    border-radius: 12px;
+    margin-top: 16px;
+    padding: 18px 12px 12px 12px;
     font-weight: 600;
 }}
 
@@ -54,9 +70,9 @@ QGroupBox::title {{
 }}
 
 QComboBox, QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox {{
-    min-height: 34px;
+    min-height: 36px;
     padding: 4px 10px;
-    background-color: {colors.surface};
+    background-color: {colors.canvas};
     color: {colors.text_primary};
     border: 1px solid {colors.border};
     border-radius: 8px;
@@ -95,8 +111,8 @@ QComboBox QAbstractItemView {{
 }}
 
 QPushButton, QToolButton {{
-    min-height: 32px;
-    padding: 4px 12px;
+    min-height: 36px;
+    padding: 6px 12px;
     background-color: {colors.surface_alt};
     color: {colors.text_primary};
     border: 1px solid {colors.border};
@@ -128,9 +144,9 @@ QPushButton:disabled, QToolButton:disabled {{
 }}
 
 QToolBar {{
-    spacing: 6px;
-    padding: 8px 10px;
-    background-color: {colors.surface};
+    spacing: 8px;
+    padding: 10px 12px;
+    background-color: {colors.surface_alt};
     border: none;
     border-bottom: 1px solid {colors.border};
 }}
@@ -139,6 +155,13 @@ QToolBar::separator {{
     width: 1px;
     margin: 6px 8px;
     background-color: {colors.border};
+}}
+
+QToolBar QToolButton {{
+    min-width: 48px;
+    min-height: 48px;
+    padding: 5px;
+    border-radius: 10px;
 }}
 
 QStatusBar {{
@@ -228,13 +251,14 @@ QToolTip {{
 QCheckBox, QRadioButton {{
     spacing: 8px;
     color: {colors.text_primary};
+    background-color: transparent;
 }}
 
 QCheckBox::indicator, QRadioButton::indicator {{
     width: 17px;
     height: 17px;
     border: 1px solid {colors.border};
-    background-color: {colors.surface};
+    background-color: {colors.canvas};
 }}
 
 QCheckBox::indicator {{

@@ -12,6 +12,7 @@ from app_automatas.model.exceptions import (
     InvalidSymbolError,
     UnknownTransitionError,
 )
+from app_automatas.services.validation import validate_automaton
 from app_automatas.view.main_window import MainWindow
 
 
@@ -28,6 +29,7 @@ class AppController(QObject):
         self._view.editor_tool_changed.connect(self._on_editor_tool_changed)
         self._view.theme_changed.connect(self._on_theme_changed)
         self._view.clear_requested.connect(self._on_clear_requested)
+        self._view.validation_requested.connect(self._on_validation_requested)
         self._view.canvas_clicked.connect(self._on_canvas_clicked)
         self._view.state_selected.connect(self._on_state_selected)
         self._view.state_moved.connect(self._on_state_moved)
@@ -116,6 +118,22 @@ class AppController(QObject):
         self._view.set_theme(self._model.theme_mode)
         theme_label = "oscuro" if self._model.theme_mode == "dark" else "claro"
         self._view.show_status(f"Tema {theme_label} activado")
+
+    def _on_validation_requested(self) -> None:
+        result = validate_automaton(self._model.automaton)
+        self._view.show_validation_result(
+            self._model.automaton_type,
+            result.is_valid,
+            result.messages,
+        )
+        if result.is_valid:
+            self._view.show_status("Autómata válido: listo para simular")
+        else:
+            count = len(result.issues)
+            suffix = "problema" if count == 1 else "problemas"
+            self._view.show_status(
+                f"Validación pendiente: {count} {suffix} por corregir"
+            )
 
     def _on_clear_requested(self) -> None:
         automaton = self._model.automaton
