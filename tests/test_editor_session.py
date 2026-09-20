@@ -1,6 +1,8 @@
 import pytest
 
+from app_automatas.model.dfa import DFA
 from app_automatas.model.editor_session import EditorSession
+from app_automatas.model.nfa import NFA
 
 
 def test_editor_session_defaults_to_dfa_and_light_theme() -> None:
@@ -8,6 +10,7 @@ def test_editor_session_defaults_to_dfa_and_light_theme() -> None:
 
     assert session.automaton_type == "AFD"
     assert session.theme_mode == "light"
+    assert isinstance(session.automaton, DFA)
 
 
 def test_editor_session_accepts_nfa() -> None:
@@ -16,6 +19,7 @@ def test_editor_session_accepts_nfa() -> None:
     session.set_automaton_type("AFN")
 
     assert session.automaton_type == "AFN"
+    assert isinstance(session.automaton, NFA)
 
 
 def test_editor_session_rejects_unknown_type() -> None:
@@ -23,6 +27,18 @@ def test_editor_session_rejects_unknown_type() -> None:
 
     with pytest.raises(ValueError, match="Unsupported automaton type"):
         session.set_automaton_type("PDA")
+
+
+def test_editor_session_does_not_discard_non_empty_automaton_when_switching_type() -> None:
+    session = EditorSession()
+    session.automaton.add_state()
+
+    with pytest.raises(ValueError, match="document is not empty"):
+        session.set_automaton_type("AFN")
+
+    assert session.automaton_type == "AFD"
+    assert isinstance(session.automaton, DFA)
+    assert len(session.automaton.states) == 1
 
 
 def test_editor_session_accepts_dark_theme() -> None:

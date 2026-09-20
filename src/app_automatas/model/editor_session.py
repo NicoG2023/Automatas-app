@@ -1,9 +1,12 @@
-"""Minimal editor session used by the application bootstrap."""
+"""Editor session containing UI preferences and the current automaton."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal, cast
+
+from app_automatas.model.automaton import Automaton
+from app_automatas.model.factory import create_automaton
 
 AutomatonType = Literal["AFD", "AFN"]
 ThemeMode = Literal["light", "dark"]
@@ -13,16 +16,28 @@ SUPPORTED_THEMES: tuple[ThemeMode, ...] = ("light", "dark")
 
 @dataclass(slots=True)
 class EditorSession:
-    """State shared by the editor while the automaton model is introduced."""
+    """State shared by the editor independently from the Qt widgets."""
 
     automaton_type: AutomatonType = "AFD"
     theme_mode: ThemeMode = "light"
+    automaton: Automaton = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.automaton = create_automaton(self.automaton_type)
 
     def set_automaton_type(self, automaton_type: str) -> None:
-        """Update the selected automaton type after validating it."""
+        """Switch the concrete automaton while the current document is empty."""
         if automaton_type not in SUPPORTED_AUTOMATON_TYPES:
             raise ValueError(f"Unsupported automaton type: {automaton_type}")
-        self.automaton_type = cast(AutomatonType, automaton_type)
+
+        validated_type = cast(AutomatonType, automaton_type)
+        if validated_type == self.automaton_type:
+            return
+        if not self.automaton.is_empty:
+            raise ValueError("Cannot change automaton type while the document is not empty")
+
+        self.automaton_type = validated_type
+        self.automaton = create_automaton(validated_type)
 
     def set_theme_mode(self, theme_mode: str) -> None:
         """Update the selected visual theme after validating it."""
