@@ -19,6 +19,10 @@ class InvalidSymbolError(AutomatonError):
     """Raised when a symbol is invalid or does not belong to the alphabet."""
 
 
+class UnknownTransitionError(AutomatonError):
+    """Raised when an operation references a transition that does not exist."""
+
+
 class DuplicateTransitionError(AutomatonError):
     """Raised when a transition violates deterministic automaton rules."""
 

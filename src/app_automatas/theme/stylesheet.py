@@ -30,7 +30,7 @@ QLabel#secondaryText {{
     color: {colors.text_secondary};
 }}
 
-QLabel#selectedStateName {{
+QLabel#selectedStateName, QLabel#selectedTransitionName {{
     color: {colors.accent};
     font-size: 16px;
     font-weight: 700;

@@ -10,6 +10,7 @@ from app_automatas.model.exceptions import (
     DuplicateStateError,
     InvalidSymbolError,
     UnknownStateError,
+    UnknownTransitionError,
 )
 from app_automatas.model.state import State
 from app_automatas.model.transition import Transition
@@ -187,6 +188,41 @@ class Automaton(ABC):
         transition.add_symbol(validated_symbol)
         return transition
 
+    def get_transition(self, source_id: str, target_id: str) -> Transition:
+        """Return the logical edge connecting one ordered pair of states."""
+        source = self.get_state(source_id)
+        target = self.get_state(target_id)
+        transition = self._find_transition(source, target)
+        if transition is None:
+            raise UnknownTransitionError(
+                f"Unknown transition: {source_id} -> {target_id}"
+            )
+        return transition
+
+    def set_transition_symbols(
+        self,
+        source_id: str,
+        target_id: str,
+        symbols: Iterable[str],
+    ) -> Transition:
+        """Replace all symbols on an existing edge after full validation."""
+        transition = self.get_transition(source_id, target_id)
+        validated_symbols = {
+            self._validate_transition_symbol(symbol) for symbol in symbols
+        }
+        if not validated_symbols:
+            raise InvalidSymbolError("A transition must contain at least one symbol")
+
+        for symbol in validated_symbols:
+            self._validate_transition_rule(
+                transition.source,
+                transition.target,
+                symbol,
+            )
+
+        transition.symbols = validated_symbols
+        return transition
+
     def remove_transition(
         self,
         source_id: str,
@@ -206,6 +242,13 @@ class Automaton(ABC):
         transition.remove_symbol(symbol)
         if not transition.symbols:
             self._transitions.remove(transition)
+
+    def clear(self) -> None:
+        """Reset the whole document while keeping the concrete automaton type."""
+        self._alphabet.clear()
+        self._states.clear()
+        self._transitions.clear()
+        self._next_state_index = 0
 
     def destinations(self, source_id: str, symbol: str) -> frozenset[str]:
         """Return every state identifier reachable with one symbol."""

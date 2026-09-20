@@ -65,8 +65,16 @@ def test_editor_session_accepts_state_tool() -> None:
     assert session.editor_tool == "state"
 
 
+def test_editor_session_accepts_transition_tool() -> None:
+    session = EditorSession()
+
+    session.set_editor_tool("transition")
+
+    assert session.editor_tool == "transition"
+
+
 def test_editor_session_rejects_unknown_tool() -> None:
     session = EditorSession()
 
     with pytest.raises(ValueError, match="Unsupported editor tool"):
-        session.set_editor_tool("transition")
+        session.set_editor_tool("erase")

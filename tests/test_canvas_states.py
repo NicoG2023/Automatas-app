@@ -21,7 +21,7 @@ def test_state_tool_is_available_and_select_is_default(qapp: QApplication) -> No
     assert view.toolbar.select_action.isEnabled()
     assert view.toolbar.select_action.isChecked()
     assert view.toolbar.add_state_action.isEnabled()
-    assert not view.toolbar.add_transition_action.isEnabled()
+    assert view.toolbar.add_transition_action.isEnabled()
     assert view.canvas.dragMode() == QGraphicsView.DragMode.RubberBandDrag
 
     controller.deleteLater()

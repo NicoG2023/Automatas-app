@@ -7,6 +7,7 @@ from app_automatas.model.exceptions import (
     DuplicateTransitionError,
     InvalidSymbolError,
     UnknownStateError,
+    UnknownTransitionError,
 )
 from app_automatas.model.nfa import NFA
 
@@ -139,3 +140,87 @@ def test_confirmed_alphabet_change_removes_affected_transition_symbols() -> None
     assert automaton.alphabet == frozenset({"b"})
     assert automaton.transitions == (transition,)
     assert transition.symbols == {"b"}
+
+
+def test_transition_symbols_can_be_replaced_transactionally() -> None:
+    automaton = DFA({"a", "b", "c"})
+    source = automaton.add_state()
+    target = automaton.add_state()
+    transition = automaton.add_transition(source.identifier, target.identifier, "a")
+    automaton.add_transition(source.identifier, target.identifier, "b")
+
+    updated = automaton.set_transition_symbols(
+        source.identifier,
+        target.identifier,
+        {"b", "c"},
+    )
+
+    assert updated is transition
+    assert transition.symbols == {"b", "c"}
+
+
+def test_transition_symbols_replacement_rejects_empty_set() -> None:
+    automaton = DFA({"a"})
+    source = automaton.add_state()
+    target = automaton.add_state()
+    transition = automaton.add_transition(source.identifier, target.identifier, "a")
+
+    with pytest.raises(InvalidSymbolError, match="at least one"):
+        automaton.set_transition_symbols(source.identifier, target.identifier, [])
+
+    assert transition.symbols == {"a"}
+
+
+def test_transition_symbols_replacement_preserves_dfa_rule() -> None:
+    automaton = DFA({"a", "b"})
+    source = automaton.add_state()
+    first_target = automaton.add_state()
+    second_target = automaton.add_state()
+    first = automaton.add_transition(source.identifier, first_target.identifier, "a")
+    second = automaton.add_transition(source.identifier, second_target.identifier, "b")
+
+    with pytest.raises(DuplicateTransitionError):
+        automaton.set_transition_symbols(
+            source.identifier,
+            second_target.identifier,
+            {"a", "b"},
+        )
+
+    assert first.symbols == {"a"}
+    assert second.symbols == {"b"}
+
+
+def test_get_transition_reports_unknown_edge() -> None:
+    automaton = DFA({"a"})
+    source = automaton.add_state()
+    target = automaton.add_state()
+
+    with pytest.raises(UnknownTransitionError):
+        automaton.get_transition(source.identifier, target.identifier)
+
+
+def test_renaming_state_updates_transition_endpoint_references() -> None:
+    automaton = DFA({"a"})
+    source = automaton.add_state()
+    target = automaton.add_state()
+    transition = automaton.add_transition(source.identifier, target.identifier, "a")
+
+    automaton.rename_state(source.identifier, "inicio")
+
+    assert transition.source.identifier == "inicio"
+    assert automaton.get_transition("inicio", target.identifier) is transition
+
+
+def test_clear_resets_complete_document_and_automatic_ids() -> None:
+    automaton = DFA({"a"})
+    source = automaton.add_state()
+    target = automaton.add_state()
+    automaton.add_transition(source.identifier, target.identifier, "a")
+
+    automaton.clear()
+    new_state = automaton.add_state()
+
+    assert automaton.alphabet == frozenset()
+    assert automaton.transitions == ()
+    assert [state.identifier for state in automaton.states] == ["q0"]
+    assert new_state.identifier == "q0"

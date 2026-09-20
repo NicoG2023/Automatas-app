@@ -27,4 +27,8 @@ class AutomatonView(QGraphicsView):
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
             self.viewport().setCursor(Qt.CursorShape.CrossCursor)
             return
+        if editor_tool == "transition":
+            self.setDragMode(QGraphicsView.DragMode.NoDrag)
+            self.viewport().setCursor(Qt.CursorShape.PointingHandCursor)
+            return
         raise ValueError(f"Unsupported editor tool: {editor_tool}")

@@ -10,10 +10,10 @@ from app_automatas.model.factory import create_automaton
 
 AutomatonType = Literal["AFD", "AFN"]
 ThemeMode = Literal["light", "dark"]
-EditorTool = Literal["select", "state"]
+EditorTool = Literal["select", "state", "transition"]
 SUPPORTED_AUTOMATON_TYPES: tuple[AutomatonType, ...] = ("AFD", "AFN")
 SUPPORTED_THEMES: tuple[ThemeMode, ...] = ("light", "dark")
-SUPPORTED_EDITOR_TOOLS: tuple[EditorTool, ...] = ("select", "state")
+SUPPORTED_EDITOR_TOOLS: tuple[EditorTool, ...] = ("select", "state", "transition")
 
 
 @dataclass(slots=True)

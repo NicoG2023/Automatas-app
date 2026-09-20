@@ -6,10 +6,11 @@ from PySide6.QtWidgets import QToolBar
 
 
 class EditorToolBar(QToolBar):
-    """Expose the editor actions that are currently available."""
+    """Expose the primary automaton editing actions."""
 
     tool_changed = Signal(str)
     theme_changed = Signal(str)
+    clear_requested = Signal()
 
     def __init__(self) -> None:
         super().__init__("Herramientas")
@@ -20,12 +21,14 @@ class EditorToolBar(QToolBar):
         self._tool_group.setExclusive(True)
         self.select_action = self._add_tool_action("Seleccionar", "select")
         self.add_state_action = self._add_tool_action("Estado", "state")
+        self.add_transition_action = self._add_tool_action("Transición", "transition")
         self.select_action.setChecked(True)
 
-        self.add_transition_action = self._add_placeholder_action("Transición")
-
         self.addSeparator()
-        self.clear_action = self._add_placeholder_action("Limpiar")
+        self.clear_action = QAction("Limpiar", self)
+        self.clear_action.setToolTip("Eliminar todo el autómata actual")
+        self.clear_action.triggered.connect(self.clear_requested.emit)
+        self.addAction(self.clear_action)
 
         self.addSeparator()
         self.theme_action = QAction("Modo oscuro", self)
@@ -38,21 +41,16 @@ class EditorToolBar(QToolBar):
         action = QAction(text, self)
         action.setCheckable(True)
         action.setProperty("editorTool", editor_tool)
-        action.setToolTip(
-            "Seleccionar y mover estados"
-            if editor_tool == "select"
-            else "Crear estados haciendo clic en el lienzo"
-        )
+        tooltips = {
+            "select": "Seleccionar y mover estados o transiciones",
+            "state": "Crear estados haciendo clic en el lienzo",
+            "transition": "Crear una transición seleccionando origen y destino",
+        }
+        action.setToolTip(tooltips[editor_tool])
         action.triggered.connect(
             lambda checked, tool=editor_tool: self._on_tool_triggered(tool, checked)
         )
         self._tool_group.addAction(action)
-        self.addAction(action)
-        return action
-
-    def _add_placeholder_action(self, text: str) -> QAction:
-        action = QAction(text, self)
-        action.setEnabled(False)
         self.addAction(action)
         return action
 
@@ -68,6 +66,7 @@ class EditorToolBar(QToolBar):
         actions = {
             "select": self.select_action,
             "state": self.add_state_action,
+            "transition": self.add_transition_action,
         }
         try:
             action = actions[editor_tool]
