@@ -60,6 +60,7 @@ class ConversionProcessDialog(QDialog):
         self.pages.addWidget(self._build_step_two())
         self.pages.addWidget(self._build_step_three())
         self.pages.addWidget(self._build_step_four())
+        self.pages.addWidget(self._build_step_five())
 
         self.previous_button = QPushButton("Anterior")
         self.previous_button.clicked.connect(self.previous_step)
@@ -105,6 +106,7 @@ class ConversionProcessDialog(QDialog):
 
     def set_theme(self, theme_mode: str) -> None:
         self._theme_mode = theme_mode
+        self.complete_scene.set_theme(theme_mode)
         self.final_scene.set_theme(theme_mode)
 
     def _sync_step_header(self) -> None:
@@ -113,13 +115,15 @@ class ConversionProcessDialog(QDialog):
             "1. Obtener la tabla de transiciones del AFN",
             "2. Identificar y expandir los conjuntos",
             "3. Cambiar los nombres a k₀, k₁, …",
-            "4. Dibujar y analizar el AFD final",
+            "4. Dibujar el AFD completo",
+            "5. Analizar el AFD y obtener el AFD final",
         )
         descriptions = (
             "Se parte de una fila por cada estado original del AFN y se calcula su destino para cada símbolo.",
             "Cada conjunto no vacío que aparezca como destino se convierte en una nueva fila. Se repite hasta que no aparezcan conjuntos nuevos.",
             "Cada fila de la tabla se reemplaza por un nombre determinista k0, k1, … para construir el AFD con etiquetas simples.",
-            "Se dibuja el AFD obtenido. Si aparecen estados inaccesibles, se indican y se elimina ese ruido para dejar el AFD final alcanzable.",
+            "Se dibuja literalmente el AFD que describe la tabla renombrada, antes de eliminar estados o ramas. En este punto aparecen todos los estados k de la tabla.",
+            "Se parte del estado inicial, se determinan los estados alcanzables y se eliminan los estados inaccesibles junto con sus transiciones. El dibujo resultante es el AFD final.",
         )
         self.step_title.setText(titles[index])
         self.step_description.setText(descriptions[index])
@@ -181,24 +185,50 @@ class ConversionProcessDialog(QDialog):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 4, 0, 0)
+
+        note = QLabel(
+            "Se dibujan todos los estados y transiciones de la tabla renombrada. "
+            "Todavía no se elimina ningún estado, aunque después resulte inaccesible."
+        )
+        note.setObjectName("secondaryText")
+        note.setWordWrap(True)
+        layout.addWidget(note)
+
+        self.complete_scene, complete_canvas = self._build_dfa_canvas(
+            self.process.complete_dfa
+        )
+        complete_canvas.setObjectName("conversionCompleteDfaCanvas")
+        layout.addWidget(complete_canvas, 1)
+        return page
+
+    def _build_step_five(self) -> QWidget:
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(0, 4, 0, 0)
+
+        reachable = ", ".join(self.process.reachable_names)
         if self.process.unreachable_names:
             removed = ", ".join(self.process.unreachable_names)
             note_text = (
-                "Se eliminaron los estados inaccesibles del AFD completo: "
-                f"{removed}."
+                f"Estados alcanzables desde el estado inicial: {reachable}.  "
+                f"Estados inaccesibles: {removed}.  "
+                "Se eliminan esos estados y todas las transiciones conectadas exclusivamente a ellos."
             )
         else:
             note_text = (
-                "Todos los estados del AFD completo son alcanzables desde el estado inicial, "
-                "así que el dibujo final coincide con el AFD completo."
+                f"Estados alcanzables desde el estado inicial: {reachable}.  "
+                "No hay estados inaccesibles, así que el AFD final coincide con el AFD completo."
             )
+
         note = QLabel(note_text)
         note.setObjectName("conversionReachabilityNote")
         note.setWordWrap(True)
         layout.addWidget(note)
+
         self.final_scene, final_canvas = self._build_dfa_canvas(
             self.process.reachable_dfa
         )
+        final_canvas.setObjectName("conversionFinalDfaCanvas")
         layout.addWidget(final_canvas, 1)
         return page
 

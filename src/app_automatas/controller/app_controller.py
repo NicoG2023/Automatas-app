@@ -18,6 +18,7 @@ from app_automatas.model.exceptions import (
 )
 from app_automatas.services.nfa_to_dfa import NFAConversionError, convert_nfa_to_dfa
 from app_automatas.services.persistence import PersistenceError, load_automaton, save_automaton
+from app_automatas.services.regular_equations import automaton_to_regular_expression
 from app_automatas.services.simulation import (
     DFASimulator,
     NFASimulator,
@@ -48,6 +49,9 @@ class AppController(QObject):
         self._view.clear_requested.connect(self._on_clear_requested)
         self._view.validation_requested.connect(self._on_validation_requested)
         self._view.conversion_requested.connect(self._on_conversion_requested)
+        self._view.regular_expression_requested.connect(
+            self._on_regular_expression_requested
+        )
         self._view.open_requested.connect(self._on_open_requested)
         self._view.save_requested.connect(self._on_save_requested)
         self._view.simulation_start_requested.connect(self._on_simulation_start_requested)
@@ -230,6 +234,40 @@ class AppController(QObject):
         self._view.show_converted_automaton(generated, source_nfa=automaton)
         self._view.show_status(
             f"AFD generado: {len(generated.states)} estados por subconjuntos"
+        )
+
+    def _on_regular_expression_requested(self) -> None:
+        automaton = self._model.automaton
+        validation = validate_automaton(automaton)
+        if not validation.is_valid:
+            messages = tuple(
+                message.replace(
+                    "antes de iniciar una simulación",
+                    "antes de obtener la expresión regular",
+                )
+                for message in validation.messages
+            )
+            self._view.show_regular_expression_error(messages)
+            self._view.show_status(
+                "Corrige el autómata antes de obtener la expresión regular"
+            )
+            return
+
+        try:
+            solution = automaton_to_regular_expression(automaton)
+        except (ValueError, RuntimeError):
+            self._view.show_regular_expression_error(
+                (
+                    "No fue posible completar el método de ecuaciones para el "
+                    "autómata actual.",
+                )
+            )
+            self._view.show_status("No se pudo obtener la expresión regular")
+            return
+
+        self._view.show_regular_expression_process(solution)
+        self._view.show_status(
+            f"Expresión regular obtenida para {automaton.automaton_type}"
         )
 
     def _on_simulation_start_requested(self, input_string: str) -> None:

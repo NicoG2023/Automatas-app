@@ -24,6 +24,7 @@ class ConversionProcess:
     names: tuple[tuple[Subset, str], ...]
     complete_dfa: DFA
     reachable_dfa: DFA
+    reachable_names: tuple[str, ...]
     unreachable_names: tuple[str, ...]
 
     @property
@@ -90,12 +91,17 @@ def build_conversion_process(nfa: NFA) -> ConversionProcess:
         name_map,
         initial_subset=frozenset({initial.identifier}),
     )
-    reachable_names = _reachable_state_names(complete_dfa)
-    reachable_dfa = _copy_reachable_dfa(complete_dfa, reachable_names)
+    reachable_name_set = _reachable_state_names(complete_dfa)
+    reachable_names = tuple(
+        state.identifier
+        for state in complete_dfa.states
+        if state.identifier in reachable_name_set
+    )
+    reachable_dfa = _copy_reachable_dfa(complete_dfa, reachable_name_set)
     unreachable_names = tuple(
         state.identifier
         for state in complete_dfa.states
-        if state.identifier not in reachable_names
+        if state.identifier not in reachable_name_set
     )
 
     return ConversionProcess(
@@ -105,6 +111,7 @@ def build_conversion_process(nfa: NFA) -> ConversionProcess:
         names=names,
         complete_dfa=complete_dfa,
         reachable_dfa=reachable_dfa,
+        reachable_names=reachable_names,
         unreachable_names=unreachable_names,
     )
 

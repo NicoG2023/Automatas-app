@@ -84,6 +84,7 @@ def test_process_complete_dfa_contains_all_table_rows() -> None:
 def test_process_removes_unreachable_states_only_at_final_step() -> None:
     process = build_conversion_process(_classroom_nfa())
 
+    assert process.reachable_names == ("k0", "k4", "k5", "k6")
     assert process.unreachable_names == ("k1", "k2", "k3")
     assert {state.identifier for state in process.reachable_dfa.states} == {
         "k0",

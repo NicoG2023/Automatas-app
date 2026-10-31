@@ -17,11 +17,15 @@ from app_automatas.model.dfa import DFA
 from app_automatas.model.nfa import NFA
 from app_automatas.model.state import State
 from app_automatas.model.transition import Transition
+from app_automatas.services.regular_equations import RegularEquationSolution
 from app_automatas.theme.manager import apply_theme
 from app_automatas.view.canvas.automaton_scene import AutomatonScene
 from app_automatas.view.canvas.automaton_view import AutomatonView
 from app_automatas.view.canvas.transition_item import TransitionItem
 from app_automatas.view.dialogs.conversion_dialog import ConversionDialog
+from app_automatas.view.dialogs.regular_expression_process_dialog import (
+    RegularExpressionProcessDialog,
+)
 from app_automatas.view.widgets.editor_sidebar import EditorSidebar
 from app_automatas.view.widgets.editor_toolbar import EditorToolBar
 from app_automatas.view.widgets.simulation_panel import SimulationPanel
@@ -37,6 +41,7 @@ class MainWindow(QMainWindow):
     clear_requested = Signal()
     validation_requested = Signal()
     conversion_requested = Signal()
+    regular_expression_requested = Signal()
     open_requested = Signal()
     save_requested = Signal()
     canvas_clicked = Signal(float, float)
@@ -65,6 +70,7 @@ class MainWindow(QMainWindow):
         self.resize(1280, 800)
         self._theme_mode = "light"
         self._conversion_dialogs: list[ConversionDialog] = []
+        self._regular_expression_dialogs: list[RegularExpressionProcessDialog] = []
 
         self.scene = AutomatonScene()
         self.canvas = AutomatonView(self.scene)
@@ -91,6 +97,9 @@ class MainWindow(QMainWindow):
         self.toolbar.clear_requested.connect(self.clear_requested.emit)
         self.toolbar.validation_requested.connect(self.validation_requested.emit)
         self.toolbar.conversion_requested.connect(self.conversion_requested.emit)
+        self.toolbar.regular_expression_requested.connect(
+            self.regular_expression_requested.emit
+        )
         self.toolbar.open_requested.connect(self.open_requested.emit)
         self.toolbar.save_requested.connect(self.save_requested.emit)
         self.simulation_panel.start_requested.connect(self.simulation_start_requested.emit)
@@ -180,6 +189,32 @@ class MainWindow(QMainWindow):
     def _remove_conversion_dialog(self, dialog: ConversionDialog) -> None:
         if dialog in self._conversion_dialogs:
             self._conversion_dialogs.remove(dialog)
+
+    @property
+    def regular_expression_dialogs(self) -> tuple[RegularExpressionProcessDialog, ...]:
+        return tuple(self._regular_expression_dialogs)
+
+    def show_regular_expression_process(
+        self,
+        solution: RegularEquationSolution,
+    ) -> RegularExpressionProcessDialog:
+        """Open the pedagogical automaton-to-regex process in its own dialog."""
+        dialog = RegularExpressionProcessDialog(solution, self)
+        self._regular_expression_dialogs.append(dialog)
+        dialog.finished.connect(
+            lambda _result, current=dialog: self._remove_regular_expression_dialog(
+                current
+            )
+        )
+        dialog.show()
+        return dialog
+
+    def _remove_regular_expression_dialog(
+        self,
+        dialog: RegularExpressionProcessDialog,
+    ) -> None:
+        if dialog in self._regular_expression_dialogs:
+            self._regular_expression_dialogs.remove(dialog)
 
     def set_simulation_available(self, available: bool) -> None:
         self.simulation_panel.set_available(available)
@@ -449,6 +484,15 @@ class MainWindow(QMainWindow):
 
     def show_simulation_error(self, message: str) -> None:
         QMessageBox.warning(self, "No se puede simular", message)
+
+    def show_regular_expression_error(self, messages: tuple[str, ...]) -> None:
+        """Explain why the current automaton cannot be converted yet."""
+        detail = "\n".join(f"• {message}" for message in messages)
+        QMessageBox.warning(
+            self,
+            "No se puede obtener la expresión regular",
+            detail,
+        )
 
     def show_status(self, message: str) -> None:
         self.statusBar().showMessage(message)

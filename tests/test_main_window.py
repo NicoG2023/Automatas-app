@@ -198,7 +198,7 @@ def test_conversion_process_walks_through_five_steps(qapp: QApplication) -> None
     process_dialog = dialog.process_dialog
     assert process_dialog is not None
     assert process_dialog.current_step == 1
-    assert process_dialog.pages.count() == 4
+    assert process_dialog.pages.count() == 5
 
     original_table = process_dialog.findChild(
         QTableWidget, "conversionProcessOriginalTable"
@@ -236,7 +236,22 @@ def test_conversion_process_walks_through_five_steps(qapp: QApplication) -> None
         qapp.processEvents()
         assert process_dialog.current_step == expected_step
 
+    assert process_dialog.current_step == 4
+    assert {state.identifier for state in process_dialog.process.complete_dfa.states} == {
+        "k0", "k1", "k2", "k3", "k4", "k5", "k6"
+    }
+    assert process_dialog.complete_scene is not None
+    assert process_dialog.next_button.isEnabled()
+
+    process_dialog.next_button.click()
+    qapp.processEvents()
+    assert process_dialog.current_step == 5
+    assert process_dialog.process.reachable_names == ("k0", "k4", "k5", "k6")
     assert set(process_dialog.process.unreachable_names) == {"k1", "k2", "k3"}
+    assert {state.identifier for state in process_dialog.process.reachable_dfa.states} == {
+        "k0", "k4", "k5", "k6"
+    }
+    assert process_dialog.final_scene is not None
     assert not process_dialog.next_button.isEnabled()
 
     process_dialog.close()

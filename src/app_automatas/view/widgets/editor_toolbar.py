@@ -26,6 +26,7 @@ class EditorToolBar(QToolBar):
     clear_requested = Signal()
     validation_requested = Signal()
     conversion_requested = Signal()
+    regular_expression_requested = Signal()
     open_requested = Signal()
     save_requested = Signal()
 
@@ -92,6 +93,19 @@ class EditorToolBar(QToolBar):
         self.convert_action.setEnabled(False)
         self.addAction(self.convert_action)
         self._enable_immediate_tooltip(self.convert_action)
+
+        self.regex_action = QAction(
+            _create_regex_icon(colors),
+            "Autómata a expresión regular",
+            self,
+        )
+        self._configure_action_help(
+            self.regex_action,
+            "Expresión regular — obtiene paso a paso una expresión equivalente mediante ecuaciones y el lema de Arden.",
+        )
+        self.regex_action.triggered.connect(self.regular_expression_requested.emit)
+        self.addAction(self.regex_action)
+        self._enable_immediate_tooltip(self.regex_action)
 
         self.validate_action = QAction(_create_validate_icon(colors), "Validar", self)
         self._configure_action_help(
@@ -185,6 +199,7 @@ class EditorToolBar(QToolBar):
         self.add_state_action.setIcon(_create_state_icon(colors))
         self.add_transition_action.setIcon(_create_transition_icon(colors))
         self.convert_action.setIcon(_create_convert_icon(colors))
+        self.regex_action.setIcon(_create_regex_icon(colors))
         self.validate_action.setIcon(_create_validate_icon(colors))
         self.clear_action.setIcon(_create_clear_icon(colors))
         self.theme_action.setIcon(
@@ -316,6 +331,30 @@ def _create_convert_icon(colors: ThemePalette) -> QIcon:
 
     painter.setPen(QPen(QColor(colors.success), 2.6))
     painter.drawEllipse(QRectF(25, 9, 8, 18))
+    return _finish_icon(pixmap, painter)
+
+
+def _create_regex_icon(colors: ThemePalette) -> QIcon:
+    """Create an icon for automaton-to-regular-expression conversion."""
+    pixmap, painter = _icon_canvas()
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    painter.setPen(QPen(QColor(colors.accent), 2.2))
+    painter.drawEllipse(QRectF(3.5, 10.5, 10, 10))
+    painter.drawEllipse(QRectF(9.5, 20.0, 8, 8))
+
+    painter.setPen(QPen(QColor(colors.primary), 2.4))
+    painter.drawLine(QPointF(16, 18), QPointF(24, 18))
+    arrow = QPainterPath()
+    arrow.moveTo(24, 18)
+    arrow.lineTo(20.5, 14.8)
+    arrow.moveTo(24, 18)
+    arrow.lineTo(20.5, 21.2)
+    painter.drawPath(arrow)
+
+    painter.setPen(QPen(QColor(colors.success), 2.0))
+    painter.drawLine(QPointF(26, 12), QPointF(31, 12))
+    painter.drawLine(QPointF(26, 18), QPointF(33, 18))
+    painter.drawLine(QPointF(26, 24), QPointF(30, 24))
     return _finish_icon(pixmap, painter)
 
 

@@ -186,7 +186,7 @@ QWidget#simulationPanel {{
     border-radius: 14px;
 }}
 
-QLabel#simulationTitle, QLabel#conversionTitle, QLabel#conversionTableTitle, QLabel#conversionProcessTitle {{
+QLabel#simulationTitle, QLabel#conversionTitle, QLabel#conversionTableTitle, QLabel#conversionProcessTitle, QLabel#regularExpressionProcessTitle {{
     color: {colors.primary};
     font-size: 16px;
     font-weight: 700;
@@ -286,6 +286,45 @@ QPushButton#conversionProcessButton:hover,
 QPushButton#conversionProcessPrimaryButton:hover {{
     background-color: {colors.primary_hover};
     border-color: {colors.primary_hover};
+}}
+
+QTextBrowser#regularExpressionInitialSystem,
+QTextBrowser#regularExpressionSubstitutionStep,
+QTextBrowser#regularExpressionArdenStep,
+QTextBrowser#regularExpressionFinalResult,
+QTextBrowser#regularExpressionSummary {{
+    padding: 18px;
+    background-color: {colors.canvas};
+    color: {colors.text_primary};
+    border: 1px solid {colors.border};
+    border-radius: 12px;
+    font-size: 17px;
+}}
+
+QTextBrowser#regularExpressionFinalResult {{
+    border: 2px solid {colors.accent};
+}}
+
+QPushButton#regularExpressionProcessPrimaryButton {{
+    background-color: {colors.primary};
+    border-color: {colors.primary};
+    color: #FFFFFF;
+}}
+
+QPushButton#regularExpressionProcessPrimaryButton:hover {{
+    background-color: {colors.primary_hover};
+    border-color: {colors.primary_hover};
+}}
+
+QPushButton#regularExpressionSummaryButton {{
+    color: {colors.primary};
+    background-color: {colors.selection};
+    border-color: {colors.border};
+}}
+
+QPushButton#regularExpressionSummaryButton:hover {{
+    background-color: {colors.surface_alt};
+    border-color: {colors.primary};
 }}
 
 QLabel#simulationResult {{
