@@ -137,11 +137,11 @@ class SimulationPanel(QWidget):
 
     def set_automaton_type(self, automaton_type: str) -> None:
         """Adapt captions while keeping simulation available for DFA and NFA."""
-        if automaton_type not in {"AFD", "AFN"}:
+        if automaton_type not in {"AFD", "AFN", "AFN-λ"}:
             raise ValueError(f"Unsupported automaton type: {automaton_type}")
         self._automaton_type = automaton_type
         self._available = True
-        if automaton_type == "AFN":
+        if automaton_type in {"AFN", "AFN-λ"}:
             self.state_caption.setText("Estados activos:")
             self.transition_caption.setText("Transiciones:")
         else:

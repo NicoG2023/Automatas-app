@@ -1,12 +1,12 @@
 # App de Autómatas
 
-Aplicación de escritorio para construir, editar, simular y convertir **autómatas finitos deterministas (AFD)** y **autómatas finitos no deterministas (AFN)** sin transiciones ε. Está desarrollada en Python 3.12 con PySide6 y sigue una separación MVC entre dominio, interfaz y controladores.
+Aplicación de escritorio para construir, editar, simular y convertir **autómatas finitos deterministas (AFD)**, **no deterministas (AFN)** y **no deterministas con transiciones λ (AFN-λ)**. Está desarrollada en Python 3.12 con PySide6 y sigue una separación MVC entre dominio, interfaz y controladores.
 
 ## Funcionalidades
 
 - Creación gráfica de estados y transiciones mediante mouse.
 - Estados iniciales y de aceptación, incluyendo estados que cumplen ambas funciones.
-- AFD y AFN sin transiciones ε.
+- AFD y AFN tradicionales sin transiciones vacías, además de AFN-λ.
 - Agrupación de varios símbolos sobre una misma transición.
 - Renombrado, eliminación y movimiento de estados.
 - Edición y eliminación de transiciones.
@@ -18,6 +18,8 @@ Aplicación de escritorio para construir, editar, simular y convertir **autómat
 - Conversión AFN → AFD mediante construcción de subconjuntos.
 - Tabla de transiciones del AFD generado.
 - Vista pedagógica **Ver Proceso** para recorrer la conversión paso a paso.
+- Conversión de una expresión regular a AFN-λ mediante la construcción inductiva
+  de la parte 1 del teorema de Kleene, mostrando las transiciones λ.
 - Guardado y carga de autómatas en JSON, incluyendo posiciones gráficas.
 
 ## Requisitos
@@ -45,7 +47,7 @@ uv run app-automatas
 
 ### Construir un autómata
 
-1. Elige **AFD** o **AFN** antes de crear estados.
+1. Elige **AFD**, **AFN** o **AFN-λ** antes de crear estados.
 2. Define el alfabeto, por ejemplo `a, b` o `0, 1`.
 3. Usa la herramienta **Estado** y haz clic sobre el lienzo.
 4. Con **Seleccionar**, marca el estado inicial y los estados de aceptación desde el panel izquierdo.
@@ -80,6 +82,20 @@ Al editar un AFN se habilita el botón de conversión. La conversión:
 - abre el resultado en una ventana independiente;
 - muestra la tabla de transiciones a la derecha;
 - permite **Ver Proceso** para consultar la tabla original, expansión de conjuntos, renombrado `k0, k1, ...` y AFD final alcanzable.
+
+### Expresión regular → AFN-λ
+
+Usa **Expresión regular a AFN-λ** en la barra de herramientas, escribe una
+expresión y confirma. El AFN-λ equivalente reemplaza el contenido actual del
+lienzo y sus transiciones vacías se muestran con la etiqueta `λ`. Se admiten
+símbolos individuales, concatenación implícita, unión con `|` o `∪`,
+paréntesis, cierre de Kleene `*`, repetición positiva `+`, cadena vacía `λ` o
+`ε`, lenguaje vacío `∅` y barra inversa para escapar operadores. La construcción
+inductiva de la parte 1 del teorema de Kleene genera un estado inicial por unión
+y conserva los estados finales de cada alternativa. Por ejemplo, `ab ∪ ba`
+genera dos ramas `λ-a-λ-b` y `λ-b-λ-a`, como en la figura de referencia. El
+AFN-λ generado se puede convertir a AFD con la construcción de subconjuntos, que
+incorpora los cierres-λ al calcular los estados del AFD.
 
 ## Guardar y abrir
 

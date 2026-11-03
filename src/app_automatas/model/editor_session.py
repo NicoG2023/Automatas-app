@@ -8,10 +8,10 @@ from typing import Literal, cast
 from app_automatas.model.automaton import Automaton
 from app_automatas.model.factory import create_automaton
 
-AutomatonType = Literal["AFD", "AFN"]
+AutomatonType = Literal["AFD", "AFN", "AFN-λ"]
 ThemeMode = Literal["light", "dark"]
 EditorTool = Literal["select", "state", "transition"]
-SUPPORTED_AUTOMATON_TYPES: tuple[AutomatonType, ...] = ("AFD", "AFN")
+SUPPORTED_AUTOMATON_TYPES: tuple[AutomatonType, ...] = ("AFD", "AFN", "AFN-λ")
 SUPPORTED_THEMES: tuple[ThemeMode, ...] = ("light", "dark")
 SUPPORTED_EDITOR_TOOLS: tuple[EditorTool, ...] = ("select", "state", "transition")
 

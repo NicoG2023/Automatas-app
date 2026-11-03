@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+from app_automatas.model.automaton import EPSILON_SYMBOLS
 from app_automatas.model.dfa import DFA
 from app_automatas.model.nfa import NFA
 from app_automatas.services.validation import validate_automaton
@@ -286,17 +287,21 @@ class NFASimulator:
             raise InvalidSimulationAutomatonError(("Selecciona un estado inicial.",))
 
         self._input_string = input_string
-        initial_path = (initial_state.identifier,)
-        self._live_paths = {initial_path}
+        active_state_ids = self._epsilon_closure({initial_state.identifier})
+        self._live_paths = {(state_id,) for state_id in active_state_ids}
         self._dead_paths = set()
-        active_states = frozenset({initial_state.identifier})
         if input_string == "":
             status: SimulationStatus = (
-                "accepted" if initial_state.is_accepting else "rejected"
+                "accepted"
+                if any(
+                    self._automaton.get_state(state_id).is_accepting
+                    for state_id in active_state_ids
+                )
+                else "rejected"
             )
             reason = (
                 None
-                if initial_state.is_accepting
+                if status == "accepted"
                 else "La cadena vacía termina sin ningún recorrido en un estado de aceptación."
             )
         else:
@@ -307,7 +312,7 @@ class NFASimulator:
         self._snapshot = NFASimulationSnapshot(
             input_string=input_string,
             position=0,
-            active_state_ids=active_states,
+            active_state_ids=active_state_ids,
             status=status,
             rejection_reason=reason,
             path_state_ids=path_states,
@@ -361,8 +366,9 @@ class NFASimulator:
                 stalled_paths.add(path)
                 continue
             for target_id in destinations:
-                next_paths.add(path + (target_id,))
                 traversed.add((source_id, target_id))
+                for closure_target_id in self._epsilon_closure({target_id}):
+                    next_paths.add(path + (closure_target_id,))
 
         self._dead_paths |= stalled_paths
 
@@ -432,6 +438,19 @@ class NFASimulator:
         if self._snapshot is None:
             raise SimulationError("Simulation has not been started")
         return self.start(self._input_string)
+
+    def _epsilon_closure(self, state_ids: set[str]) -> frozenset[str]:
+        closure = set(state_ids)
+        pending = list(state_ids)
+        while pending:
+            source_id = pending.pop()
+            for symbol in EPSILON_SYMBOLS:
+                for target_id in self._automaton.destinations(source_id, symbol):
+                    if target_id in closure:
+                        continue
+                    closure.add(target_id)
+                    pending.append(target_id)
+        return frozenset(closure)
 
 
 def _validate_input_symbols(input_string: str, alphabet: frozenset[str]) -> None:

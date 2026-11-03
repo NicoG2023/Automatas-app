@@ -1,7 +1,7 @@
 import pytest
 
 from app_automatas.model.dfa import DFA
-from app_automatas.model.nfa import NFA
+from app_automatas.model.nfa import EpsilonNFA, NFA
 from app_automatas.services.simulation import (
     InvalidSimulationInputError,
     NFASimulator,
@@ -135,6 +135,23 @@ def test_nfa_empty_string_uses_initial_acceptance() -> None:
     assert accepted.active_state_ids == frozenset({"q0"})
     assert rejected.status == "rejected"
     assert rejected.active_state_ids == frozenset({"q0"})
+
+
+def test_epsilon_nfa_simulator_follows_lambda_closures() -> None:
+    automaton = EpsilonNFA({"a"})
+    automaton.add_state("q0", is_initial=True)
+    automaton.add_state("q1")
+    automaton.add_state("q2", is_accepting=True)
+    automaton.add_transition("q0", "q1", "λ")
+    automaton.add_transition("q1", "q2", "a")
+
+    simulator = NFASimulator(automaton)
+    initial = simulator.start("a")
+    result = simulator.step()
+
+    assert initial.active_state_ids == frozenset({"q0", "q1"})
+    assert result.is_accepted
+    assert result.active_state_ids == frozenset({"q2"})
 
 
 def test_nfa_reset_restarts_same_input_from_initial_state() -> None:

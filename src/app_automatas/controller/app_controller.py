@@ -19,6 +19,10 @@ from app_automatas.model.exceptions import (
 from app_automatas.services.nfa_to_dfa import NFAConversionError, convert_nfa_to_dfa
 from app_automatas.services.persistence import PersistenceError, load_automaton, save_automaton
 from app_automatas.services.regular_equations import automaton_to_regular_expression
+from app_automatas.services.regular_expression_to_nfa import (
+    RegularExpressionSyntaxError,
+    regular_expression_to_nfa,
+)
 from app_automatas.services.simulation import (
     DFASimulator,
     NFASimulator,
@@ -51,6 +55,9 @@ class AppController(QObject):
         self._view.conversion_requested.connect(self._on_conversion_requested)
         self._view.regular_expression_requested.connect(
             self._on_regular_expression_requested
+        )
+        self._view.regular_expression_to_nfa_requested.connect(
+            self._on_regular_expression_to_nfa_requested
         )
         self._view.open_requested.connect(self._on_open_requested)
         self._view.save_requested.connect(self._on_save_requested)
@@ -268,6 +275,34 @@ class AppController(QObject):
         self._view.show_regular_expression_process(solution)
         self._view.show_status(
             f"Expresión regular obtenida para {automaton.automaton_type}"
+        )
+
+    def _on_regular_expression_to_nfa_requested(self) -> None:
+        expression, accepted = self._view.request_regular_expression()
+        if not accepted:
+            return
+
+        try:
+            generated = regular_expression_to_nfa(expression)
+        except RegularExpressionSyntaxError as exc:
+            self._view.show_regular_expression_to_nfa_error(str(exc))
+            self._view.show_status("Revisa la sintaxis de la expresión regular")
+            return
+
+        self._stop_simulation_timer()
+        self._simulator = None
+        self._model.replace_automaton(generated)
+        self._view.set_automaton_type(generated.automaton_type)
+        self._view.set_alphabet(generated.alphabet)
+        self._view.set_editor_tool(self._model.editor_tool)
+        self._view.set_simulation_automaton_type(generated.automaton_type)
+        self._view.set_conversion_available(True)
+        self._view.rebuild_automaton(generated.states, generated.transitions)
+        self._view.show_selected_state(None)
+        self._view.show_selected_transition(None)
+        self._view.reset_simulation_display()
+        self._view.show_status(
+            f"AFN-λ generado con Kleene: {len(generated.states)} estados"
         )
 
     def _on_simulation_start_requested(self, input_string: str) -> None:

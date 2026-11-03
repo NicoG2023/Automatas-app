@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from app_automatas.model.automaton import Automaton
+from app_automatas.model.automaton import Automaton, EPSILON_SYMBOLS
 from app_automatas.services.regular_expression import (
     EMPTY_SET,
     LAMBDA,
@@ -348,17 +348,29 @@ def build_initial_equation_system(automaton: Automaton) -> RegularEquationSystem
     equations: list[RegularEquation] = []
     for state in automaton.states:
         terms: list[RegularExpression] = []
+        epsilon_closure = _epsilon_closure(automaton, state.identifier)
 
         for transition in automaton.transitions:
-            if transition.source is not state:
+            if transition.source.identifier not in epsilon_closure:
                 continue
 
-            label = union(*(Symbol(symbol) for symbol in sorted(transition.symbols)))
+            symbols = tuple(
+                symbol
+                for symbol in sorted(transition.symbols)
+                if symbol not in EPSILON_SYMBOLS
+            )
+            if not symbols:
+                continue
+
+            label = union(*(Symbol(symbol) for symbol in symbols))
             terms.append(
                 concatenate(label, variable_map[transition.target.identifier])
             )
 
-        if state.is_accepting:
+        if any(
+            automaton.get_state(state_id).is_accepting
+            for state_id in epsilon_closure
+        ):
             terms.append(LAMBDA)
 
         equations.append(
@@ -381,6 +393,20 @@ def build_initial_equation_system(automaton: Automaton) -> RegularEquationSystem
         variables=variables,
         initial_variable=initial_variable,
     )
+
+
+def _epsilon_closure(automaton: Automaton, state_id: str) -> frozenset[str]:
+    closure = {state_id}
+    pending = [state_id]
+    while pending:
+        source_id = pending.pop()
+        for symbol in EPSILON_SYMBOLS:
+            for target_id in automaton.destinations(source_id, symbol):
+                if target_id in closure:
+                    continue
+                closure.add(target_id)
+                pending.append(target_id)
+    return frozenset(closure)
 
 
 def _variable_name(state_id: str) -> str:

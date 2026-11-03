@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app_automatas.model.automaton import Automaton, EPSILON_SYMBOLS
+from app_automatas.model.nfa import EpsilonNFA
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,13 +87,15 @@ def validate_automaton(automaton: Automaton) -> AutomatonValidationResult:
 
         for symbol in sorted(transition.symbols):
             if symbol in EPSILON_SYMBOLS:
+                if isinstance(automaton, EpsilonNFA):
+                    continue
                 issues.append(
                     ValidationIssue(
                         code="epsilon_transition",
                         message=(
                             f"La transición {transition.source.identifier} → "
-                            f"{transition.target.identifier} usa ε, y esta app no admite "
-                            "transiciones epsilon."
+                            f"{transition.target.identifier} usa una transición vacía, "
+                            "pero este tipo de autómata no las admite."
                         ),
                     )
                 )

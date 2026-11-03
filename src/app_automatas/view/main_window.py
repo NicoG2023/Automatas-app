@@ -42,6 +42,7 @@ class MainWindow(QMainWindow):
     validation_requested = Signal()
     conversion_requested = Signal()
     regular_expression_requested = Signal()
+    regular_expression_to_nfa_requested = Signal()
     open_requested = Signal()
     save_requested = Signal()
     canvas_clicked = Signal(float, float)
@@ -99,6 +100,9 @@ class MainWindow(QMainWindow):
         self.toolbar.conversion_requested.connect(self.conversion_requested.emit)
         self.toolbar.regular_expression_requested.connect(
             self.regular_expression_requested.emit
+        )
+        self.toolbar.regular_expression_to_nfa_requested.connect(
+            self.regular_expression_to_nfa_requested.emit
         )
         self.toolbar.open_requested.connect(self.open_requested.emit)
         self.toolbar.save_requested.connect(self.save_requested.emit)
@@ -492,6 +496,21 @@ class MainWindow(QMainWindow):
             self,
             "No se puede obtener la expresión regular",
             detail,
+        )
+
+    def request_regular_expression(self) -> tuple[str, bool]:
+        """Ask for an expression using the notation supported by the parser."""
+        return QInputDialog.getText(
+            self,
+            "Expresión regular a autómata",
+            "Expresión (usa | o ∪, concatenación, *, +, paréntesis, λ y ∅):",
+        )
+
+    def show_regular_expression_to_nfa_error(self, message: str) -> None:
+        QMessageBox.warning(
+            self,
+            "No se pudo construir el autómata",
+            message,
         )
 
     def show_status(self, message: str) -> None:

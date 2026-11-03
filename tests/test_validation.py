@@ -1,5 +1,5 @@
 from app_automatas.model.dfa import DFA
-from app_automatas.model.nfa import NFA
+from app_automatas.model.nfa import EpsilonNFA, NFA
 from app_automatas.model.state import State
 from app_automatas.services.validation import validate_automaton
 
@@ -74,6 +74,15 @@ def test_validator_defensively_reports_epsilon_transition() -> None:
     transition.symbols.add("ε")
 
     assert "epsilon_transition" in _issue_codes(automaton)
+
+
+def test_validator_accepts_lambda_transitions_only_for_epsilon_nfa() -> None:
+    automaton = EpsilonNFA()
+    automaton.add_state("q0", is_initial=True)
+    automaton.add_state("q1", is_accepting=True)
+    automaton.add_transition("q0", "q1", "λ")
+
+    assert validate_automaton(automaton).is_valid
 
 
 def test_validator_defensively_reports_empty_transition_symbols() -> None:
