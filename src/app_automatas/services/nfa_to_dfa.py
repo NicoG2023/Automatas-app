@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from collections import deque
 
+from app_automatas.model.automaton import EPSILON_SYMBOLS
 from app_automatas.model.dfa import DFA
 from app_automatas.model.nfa import NFA
 from app_automatas.services.validation import validate_automaton
@@ -19,7 +20,7 @@ class NFAConversionError(ValueError):
 
 
 def convert_nfa_to_dfa(nfa: NFA) -> DFA:
-    """Convert an epsilon-free NFA into an equivalent DFA by subset construction.
+    """Convert an NFA, including lambda transitions, by subset construction.
 
     Only reachable non-empty subsets are materialized. Missing transitions remain
     absent because this application's DFA semantics reject when no transition exists.
@@ -46,7 +47,7 @@ def convert_nfa_to_dfa(nfa: NFA) -> DFA:
         return "{" + ",".join(ordered) + "}"
 
     dfa = DFA(nfa.alphabet)
-    initial_subset = frozenset({initial_state.identifier})
+    initial_subset = _epsilon_closure(nfa, {initial_state.identifier})
     pending: deque[frozenset[str]] = deque([initial_subset])
     discovered: set[frozenset[str]] = {initial_subset}
     created_names: set[str] = set()
@@ -70,7 +71,7 @@ def convert_nfa_to_dfa(nfa: NFA) -> DFA:
             if not destination_ids:
                 continue
 
-            target_subset = frozenset(destination_ids)
+            target_subset = _epsilon_closure(nfa, destination_ids)
             if target_subset not in discovered:
                 discovered.add(target_subset)
                 pending.append(target_subset)
@@ -86,6 +87,23 @@ def convert_nfa_to_dfa(nfa: NFA) -> DFA:
 
     _apply_grid_layout(dfa)
     return dfa
+
+
+def _epsilon_closure(
+    nfa: NFA,
+    state_ids: set[str] | frozenset[str],
+) -> frozenset[str]:
+    closure = set(state_ids)
+    pending = list(state_ids)
+    while pending:
+        source_id = pending.pop()
+        for epsilon_symbol in EPSILON_SYMBOLS:
+            for target_id in nfa.destinations(source_id, epsilon_symbol):
+                if target_id in closure:
+                    continue
+                closure.add(target_id)
+                pending.append(target_id)
+    return frozenset(closure)
 
 
 def _apply_grid_layout(dfa: DFA) -> None:

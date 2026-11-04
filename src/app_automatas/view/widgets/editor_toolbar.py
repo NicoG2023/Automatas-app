@@ -27,6 +27,7 @@ class EditorToolBar(QToolBar):
     validation_requested = Signal()
     conversion_requested = Signal()
     regular_expression_requested = Signal()
+    regular_expression_to_nfa_requested = Signal()
     open_requested = Signal()
     save_requested = Signal()
 
@@ -106,6 +107,22 @@ class EditorToolBar(QToolBar):
         self.regex_action.triggered.connect(self.regular_expression_requested.emit)
         self.addAction(self.regex_action)
         self._enable_immediate_tooltip(self.regex_action)
+
+        self.regex_to_nfa_action = QAction(
+            _create_regex_icon(colors),
+            "Expresión regular a AFN-λ",
+            self,
+        )
+        self._configure_action_help(
+            self.regex_to_nfa_action,
+            "Expresión a AFN-λ — aplica inductivamente la parte 1 del teorema de "
+            "Kleene y muestra las transiciones vacías λ.",
+        )
+        self.regex_to_nfa_action.triggered.connect(
+            self.regular_expression_to_nfa_requested.emit
+        )
+        self.addAction(self.regex_to_nfa_action)
+        self._enable_immediate_tooltip(self.regex_to_nfa_action)
 
         self.validate_action = QAction(_create_validate_icon(colors), "Validar", self)
         self._configure_action_help(

@@ -39,7 +39,7 @@ class EditorSidebar(QWidget):
         self._selected_transition: tuple[str, str] | None = None
 
         self.automaton_type_combo = QComboBox()
-        self.automaton_type_combo.addItems(["AFD", "AFN"])
+        self.automaton_type_combo.addItems(["AFD", "AFN", "AFN-λ"])
         self.automaton_type_combo.currentTextChanged.connect(
             self.automaton_type_changed.emit
         )

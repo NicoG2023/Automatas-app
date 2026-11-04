@@ -5,8 +5,9 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 
+from app_automatas.model.automaton import EPSILON_SYMBOLS
 from app_automatas.model.dfa import DFA
-from app_automatas.model.nfa import NFA
+from app_automatas.model.nfa import EpsilonNFA, NFA
 from app_automatas.services.nfa_to_dfa import NFAConversionError
 from app_automatas.services.validation import validate_automaton
 
@@ -61,6 +62,11 @@ def build_conversion_process(nfa: NFA) -> ConversionProcess:
     )
 
     original_subsets = tuple(frozenset({identifier}) for identifier in singleton_order)
+    if isinstance(nfa, EpsilonNFA):
+        initial_closure = _epsilon_closure(nfa, frozenset({initial.identifier}))
+        original_subsets = tuple(
+            dict.fromkeys((initial_closure, *original_subsets[1:]))
+        )
     original_rows = tuple(
         _row_for_subset(nfa, subset, symbols) for subset in original_subsets
     )
@@ -89,7 +95,7 @@ def build_conversion_process(nfa: NFA) -> ConversionProcess:
         nfa,
         expanded_rows,
         name_map,
-        initial_subset=frozenset({initial.identifier}),
+        initial_subset=_epsilon_closure(nfa, frozenset({initial.identifier})),
     )
     reachable_name_set = _reachable_state_names(complete_dfa)
     reachable_names = tuple(
@@ -134,10 +140,26 @@ def _row_for_subset(
     cells: list[tuple[str, Subset]] = []
     for symbol in symbols:
         destinations: set[str] = set()
-        for source_id in subset:
+        for source_id in _epsilon_closure(nfa, subset):
             destinations.update(nfa.destinations(source_id, symbol))
-        cells.append((symbol, frozenset(destinations)))
+        cells.append((symbol, _epsilon_closure(nfa, destinations)))
     return subset, tuple(cells)
+
+
+def _epsilon_closure(nfa: NFA, states: Subset) -> Subset:
+    if not isinstance(nfa, EpsilonNFA):
+        return states
+    closure = set(states)
+    pending = list(states)
+    while pending:
+        source_id = pending.pop()
+        for symbol in EPSILON_SYMBOLS:
+            for target_id in nfa.destinations(source_id, symbol):
+                if target_id in closure:
+                    continue
+                closure.add(target_id)
+                pending.append(target_id)
+    return frozenset(closure)
 
 
 def _build_named_dfa(

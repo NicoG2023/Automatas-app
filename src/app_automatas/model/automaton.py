@@ -15,7 +15,7 @@ from app_automatas.model.exceptions import (
 from app_automatas.model.state import State
 from app_automatas.model.transition import Transition
 
-EPSILON_SYMBOLS = frozenset({"ε", "ϵ"})
+EPSILON_SYMBOLS = frozenset({"ε", "ϵ", "λ"})
 
 
 class Automaton(ABC):

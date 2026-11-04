@@ -3,7 +3,7 @@ import json
 import pytest
 
 from app_automatas.model.dfa import DFA
-from app_automatas.model.nfa import NFA
+from app_automatas.model.nfa import EpsilonNFA, NFA
 from app_automatas.services.persistence import (
     PersistenceError,
     automaton_from_dict,
@@ -49,6 +49,18 @@ def test_nfa_round_trip_preserves_branching_transitions(tmp_path) -> None:
     assert loaded.destinations("inicio", "a") == frozenset({"izquierda", "derecha"})
 
 
+def test_epsilon_nfa_round_trip_preserves_lambda_transitions(tmp_path) -> None:
+    automaton = EpsilonNFA({"a"})
+    automaton.add_state("q0", is_initial=True)
+    automaton.add_state("q1", is_accepting=True)
+    automaton.add_transition("q0", "q1", "λ")
+
+    loaded = load_automaton(save_automaton(tmp_path / "epsilon.json", automaton))
+
+    assert isinstance(loaded, EpsilonNFA)
+    assert loaded.get_transition("q0", "q1").symbols == {"λ"}
+
+
 def test_serialized_document_is_human_readable_and_versioned() -> None:
     automaton = DFA({"a"})
     automaton.add_state("q0", is_initial=True)
@@ -85,7 +97,7 @@ def test_loaded_automatic_state_ids_continue_without_collision(tmp_path) -> None
                 "states": [],
                 "transitions": [],
             },
-            "AFD o AFN",
+            "AFD, AFN o AFN-λ",
         ),
     ],
 )

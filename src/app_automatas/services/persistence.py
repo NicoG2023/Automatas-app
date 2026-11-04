@@ -60,8 +60,8 @@ def automaton_from_dict(payload: object) -> Automaton:
         )
 
     automaton_type = payload.get("automaton_type")
-    if automaton_type not in {"AFD", "AFN"}:
-        raise PersistenceError("El tipo de autómata debe ser AFD o AFN.")
+    if automaton_type not in {"AFD", "AFN", "AFN-λ"}:
+        raise PersistenceError("El tipo de autómata debe ser AFD, AFN o AFN-λ.")
 
     alphabet = _string_list(payload.get("alphabet"), "alphabet")
     states = payload.get("states")

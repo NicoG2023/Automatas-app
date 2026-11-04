@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from app_automatas.model.automaton import Automaton
 from app_automatas.model.dfa import DFA
-from app_automatas.model.nfa import NFA
+from app_automatas.model.nfa import EpsilonNFA, NFA
 
 
 def create_automaton(automaton_type: str) -> Automaton:
@@ -13,4 +13,6 @@ def create_automaton(automaton_type: str) -> Automaton:
         return DFA()
     if automaton_type == "AFN":
         return NFA()
+    if automaton_type == "AFN-λ":
+        return EpsilonNFA()
     raise ValueError(f"Unsupported automaton type: {automaton_type}")

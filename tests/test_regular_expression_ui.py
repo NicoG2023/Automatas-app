@@ -144,3 +144,114 @@ def test_regex_action_reports_invalid_automaton_without_opening_dialog(
 
     controller.deleteLater()
     view.close()
+
+
+def test_kleene_action_replaces_editor_with_equivalent_nfa(
+    qapp: QApplication,
+) -> None:
+    model = EditorSession()
+    view = MainWindow()
+    controller = AppController(model=model, view=view)
+    view.request_regular_expression = lambda: ("ab ∪ ba", True)  # type: ignore[method-assign]
+
+    view.toolbar.regex_to_nfa_action.trigger()
+    qapp.processEvents()
+
+    assert model.automaton_type == "AFN-λ"
+    assert model.automaton.initial_state is not None
+    assert model.automaton.alphabet == frozenset({"a", "b"})
+    assert view.sidebar.automaton_type_combo.currentText() == "AFN-λ"
+    assert view.toolbar.convert_action.isEnabled()
+    assert "AFN-λ generado con Kleene" in view.statusBar().currentMessage()
+    lambda_edges = [
+        edge
+        for transition in model.automaton.transitions
+        if "λ" in transition.symbols
+        for edge in (view.scene.transition_item(
+            transition.source.identifier,
+            transition.target.identifier,
+        ),)
+    ]
+    assert lambda_edges
+    assert all("λ" in edge._label_item.text() for edge in lambda_edges)
+    assert len(model.automaton.states) == 9
+    assert {state.identifier for state in model.automaton.accepting_states} == {
+        "q4",
+        "q8",
+    }
+    assert model.automaton.get_state("q1").y < model.automaton.get_state("q5").y
+
+    controller.deleteLater()
+    view.close()
+
+
+def test_kleene_action_draws_the_reference_star_union_automaton(
+    qapp: QApplication,
+) -> None:
+    model = EditorSession()
+    view = MainWindow()
+    controller = AppController(model=model, view=view)
+    view.request_regular_expression = lambda: ("a*(ab ∪ ba)*", True)  # type: ignore[method-assign]
+
+    view.toolbar.regex_to_nfa_action.trigger()
+    qapp.processEvents()
+
+    automaton = model.automaton
+    expected_edges = {
+        ("q0", "q0"): {"a"},
+        ("q0", "q1"): {"λ"},
+        ("q1", "q2"): {"λ"},
+        ("q2", "q3"): {"a"},
+        ("q3", "q4"): {"λ"},
+        ("q4", "q5"): {"b"},
+        ("q1", "q6"): {"λ"},
+        ("q6", "q7"): {"b"},
+        ("q7", "q8"): {"λ"},
+        ("q8", "q9"): {"a"},
+        ("q5", "q1"): {"λ"},
+        ("q9", "q1"): {"λ"},
+    }
+    assert len(automaton.states) == 10
+    assert {state.identifier for state in automaton.accepting_states} == {
+        "q1",
+        "q5",
+        "q9",
+    }
+    assert {
+        (transition.source.identifier, transition.target.identifier):
+        transition.symbols
+        for transition in automaton.transitions
+    } == expected_edges
+    assert all(
+        view.scene.transition_item(
+            transition.source.identifier,
+            transition.target.identifier,
+        )._label_item.text()
+        == ", ".join(sorted(transition.symbols))
+        for transition in automaton.transitions
+    )
+
+    controller.deleteLater()
+    view.close()
+
+
+def test_kleene_action_reports_invalid_expression(
+    qapp: QApplication,
+) -> None:
+    model = EditorSession()
+    view = MainWindow()
+    controller = AppController(model=model, view=view)
+    view.request_regular_expression = lambda: ("a|", True)  # type: ignore[method-assign]
+    captured: list[str] = []
+    view.show_regular_expression_to_nfa_error = captured.append  # type: ignore[method-assign]
+
+    view.toolbar.regex_to_nfa_action.trigger()
+    qapp.processEvents()
+
+    assert model.automaton.is_empty
+    assert captured
+    assert "posición" in captured[0]
+    assert "sintaxis" in view.statusBar().currentMessage()
+
+    controller.deleteLater()
+    view.close()
