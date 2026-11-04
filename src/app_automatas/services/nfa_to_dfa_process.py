@@ -148,7 +148,7 @@ def _row_for_subset(
 
 def _epsilon_closure(nfa: NFA, states: Subset) -> Subset:
     if not isinstance(nfa, EpsilonNFA):
-        return states
+        return frozenset(states)
     closure = set(states)
     pending = list(states)
     while pending:
